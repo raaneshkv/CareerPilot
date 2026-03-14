@@ -13,8 +13,14 @@ const PublicNavbar = () => {
   const logoDestination = user ? "/dashboard" : "/";
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) console.error("Logout error:", error);
+    } catch (error) {
+      console.error("Unexpected error during logout:", error);
+    } finally {
+      navigate("/auth");
+    }
   };
 
   return (
