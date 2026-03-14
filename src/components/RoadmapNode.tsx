@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   ChevronDown,
@@ -14,8 +14,11 @@ import {
   Palette,
   BarChart3,
   Users,
+  Terminal,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import SkillProgressBar from "./SkillProgressBar";
 
 export interface RoadmapNodeData {
@@ -68,9 +71,26 @@ interface RoadmapNodeProps {
 
 const RoadmapNode = ({ node, index, isActive, onToggle, onComplete }: RoadmapNodeProps) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [initializing, setInitializing] = useState(false);
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const isCompleted = node.status === "completed";
   const Icon = categoryIcons[node.category] || BookOpen;
+
+  // Determine if this node sounds like a project
+  const isProject = node.title.toLowerCase().includes("project") || node.description.toLowerCase().includes("build");
+
+  const handleInitWorkspace = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setInitializing(true);
+
+    // Simulate API call to initialize a GitHub repo or workspace
+    setTimeout(() => {
+      setInitializing(false);
+      toast.success("Workspace initialized! Check your email for the GitHub repo link.", {
+        icon: <Terminal className="w-4 h-4" />
+      });
+    }, 1500);
+  };
 
   return (
     <div ref={ref}>
@@ -190,18 +210,36 @@ const RoadmapNode = ({ node, index, isActive, onToggle, onComplete }: RoadmapNod
                   </div>
                 )}
 
-                <Button
-                  size="sm"
-                  variant={isCompleted ? "outline" : "default"}
-                  className={isCompleted ? "border-success text-success" : "gradient-bg text-primary-foreground"}
-                  onClick={(e) => { e.stopPropagation(); onComplete(); }}
-                >
-                  {isCompleted ? (
-                    <><CheckCircle2 className="w-4 h-4 mr-1.5" /> Completed</>
-                  ) : (
-                    "Mark as Completed"
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant={isCompleted ? "outline" : "default"}
+                    className={isCompleted ? "border-success text-success" : "gradient-bg text-primary-foreground"}
+                    onClick={(e) => { e.stopPropagation(); onComplete(); }}
+                  >
+                    {isCompleted ? (
+                      <><CheckCircle2 className="w-4 h-4 mr-1.5" /> Completed</>
+                    ) : (
+                      "Mark as Completed"
+                    )}
+                  </Button>
+
+                  {isProject && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleInitWorkspace}
+                      disabled={initializing}
+                      className="border border-primary/20 hover:border-primary/50 text-primary"
+                    >
+                      {initializing ? (
+                        <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Initializing...</>
+                      ) : (
+                        <><Terminal className="w-4 h-4 mr-1.5" /> Initialize Workspace</>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
             </motion.div>
           )}

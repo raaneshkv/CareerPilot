@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ const Profile = () => {
   const { user, profile, refetchProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
 
   const { data: roadmaps } = useQuery({
     queryKey: ["roadmaps-history", user?.id],
@@ -109,7 +111,11 @@ const Profile = () => {
         {roadmaps && roadmaps.length > 0 ? (
           <div className="space-y-3">
             {roadmaps.map((rm: any) => (
-              <div key={rm.id} className="glass-card p-4 flex items-center gap-3">
+              <div
+                key={rm.id}
+                className="glass-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => navigate(`/dashboard?id=${rm.id}`)}
+              >
                 <FileText className="w-5 h-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">{rm.resume_file_name}</p>

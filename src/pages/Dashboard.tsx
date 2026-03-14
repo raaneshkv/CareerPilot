@@ -1,12 +1,14 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Upload, FileText, Sparkles, Loader2, Rocket, Mic } from "lucide-react";
+import { Upload, FileText, Sparkles, Loader2, Rocket, Mic, Flame } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import PersonalizedRoadmap from "@/components/PersonalizedRoadmap";
 import RoadmapDisplay from "@/components/RoadmapDisplay";
 import type { RoadmapNodeData } from "@/components/RoadmapNode";
@@ -17,7 +19,27 @@ const Dashboard = () => {
   const [file, setFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
   const [activeRoadmapId, setActiveRoadmapId] = useState<string | null>(null);
+  const [isCriticMode, setIsCriticMode] = useState(false);
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Capture dropped file or ID from query params
+  useEffect(() => {
+    // Handle query params
+    const searchParams = new URLSearchParams(location.search);
+    const id = searchParams.get('id');
+
+    if (id && id !== activeRoadmapId) {
+      setActiveRoadmapId(id);
+      // Clean up URL without triggering re-render
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+    // Handle dropped file
+    else if (location.state?.droppedFile && !file && !activeRoadmapId) {
+      setFile(location.state.droppedFile);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.search, location.state?.droppedFile, file, activeRoadmapId]);
 
   const { data: roadmaps, refetch } = useQuery({
     queryKey: ["roadmaps", user?.id],
@@ -69,13 +91,21 @@ const Dashboard = () => {
       });
       if (error) throw error;
 
+      let roadmapData = data.roadmap;
+
+      // Roast mode enhancement
+      if (isCriticMode) {
+        roadmapData.summary = "🔥 ROAST MODE: " + (roadmapData.summary || "") +
+          "\nHonestly, this resume has a lot of fluff and lacks hard impact metrics. You're getting filtered out by ATS systems because you sound like everyone else. We need to upgrade these skills aggressively.";
+      }
+
       const { data: saved, error: saveError } = await supabase
         .from("roadmaps")
         .insert({
           user_id: user.id,
           resume_file_name: file.name,
           resume_storage_path: filePath,
-          roadmap_data: data.roadmap,
+          roadmap_data: roadmapData,
         })
         .select("id")
         .single();
@@ -84,7 +114,11 @@ const Dashboard = () => {
       setActiveRoadmapId(saved.id);
       setFile(null);
       refetch();
-      toast.success("Roadmap generated successfully!");
+      if (isCriticMode) {
+        toast.success("Resume roasted! Hope you're ready for the truth.", { icon: "🔥" });
+      } else {
+        toast.success("Roadmap generated successfully!");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to generate roadmap");
     } finally {
@@ -158,18 +192,36 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-        <Button
-          onClick={handleGenerate}
-          disabled={!file || generating}
-          className="mt-6 gradient-bg text-primary-foreground"
-          size="lg"
-        >
-          {generating ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing Resume...</>
-          ) : (
-            <><Sparkles className="w-4 h-4 mr-2" /> Generate Roadmap</>
-          )}
-        </Button>
+
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2 bg-secondary/50 p-2.5 rounded-lg border border-border">
+            <Label htmlFor="mode-toggle" className="text-sm font-medium flex items-center gap-1 cursor-pointer">
+              Mentor Mode
+            </Label>
+            <Switch
+              id="mode-toggle"
+              checked={isCriticMode}
+              onCheckedChange={setIsCriticMode}
+              className="data-[state=checked]:bg-destructive"
+            />
+            <Label htmlFor="mode-toggle" className="text-sm font-medium flex items-center gap-1 cursor-pointer text-destructive">
+              <Flame className="w-3 h-3" /> "Roast Me" Mode
+            </Label>
+          </div>
+
+          <Button
+            onClick={handleGenerate}
+            disabled={!file || generating}
+            className={`gradient-bg text-primary-foreground ${isCriticMode ? 'from-orange-500 to-red-600' : ''}`}
+            size="lg"
+          >
+            {generating ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing Resume...</>
+            ) : (
+              <><Sparkles className="w-4 h-4 mr-2" /> Generate Roadmap</>
+            )}
+          </Button>
+        </div>
       </motion.div>
 
       {/* Start Mock Interview CTA */}

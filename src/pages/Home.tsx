@@ -1,6 +1,6 @@
-import { useRef } from "react";
-import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Target, TrendingUp, FileText, CheckCircle2, BarChart3, Layers, Shield, Zap, BookOpen } from "lucide-react";
 import PublicNavbar from "@/components/PublicNavbar";
@@ -22,6 +22,9 @@ const fadeUp = {
 const Home = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isHovering, setIsHovering] = useState(false);
+
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
@@ -36,8 +39,41 @@ const Home = () => {
       <PublicNavbar />
 
       {/* Hero */}
-      <section ref={heroRef} className="relative pt-32 pb-24 px-6 overflow-hidden min-h-[90vh] flex items-center">
+      <section
+        ref={heroRef}
+        className="relative pt-32 pb-24 px-6 overflow-hidden min-h-[90vh] flex items-center"
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsHovering(true); }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsHovering(true); }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsHovering(false); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsHovering(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file && (file.type === "application/pdf" || file.name.endsWith(".docx") || file.name.endsWith(".pdf"))) {
+            navigate(user ? "/dashboard" : "/auth?mode=signup", { state: { droppedFile: file } });
+          }
+        }}
+      >
         <FloatingShapes />
+
+        {/* Drag Overlay */}
+        <AnimatePresence>
+          {isHovering && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary m-4 rounded-3xl"
+            >
+              <div className="text-center pointer-events-none">
+                <FileText className="w-20 h-20 text-primary mx-auto mb-4 animate-bounce" />
+                <h2 className="text-4xl font-bold font-display gradient-text">Drop Resume Here</h2>
+                <p className="text-xl text-muted-foreground mt-2">We'll analyze it instantly</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-gradient-to-br from-primary/10 via-info/5 to-transparent blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
