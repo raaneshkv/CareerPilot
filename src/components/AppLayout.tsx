@@ -1,52 +1,39 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Compass, LayoutDashboard, User, LogOut, Moon, Sun, Mic } from "lucide-react";
+import { Compass, LayoutDashboard, User, LogOut, Mic, FileEdit, Target, LineChart, MessageSquare, Eye, Map, ChevronRight } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { motion } from "framer-motion";
 
 const AppLayout = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark");
-    }
-    return true;
-  });
+
+  // Force dark mode globally for premium aesthetic
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+  }, []);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
+    if (!loading && !user) navigate("/auth");
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDark]);
-
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) console.error("Logout error:", error);
-    } catch (error) {
-      console.error("Unexpected error during logout:", error);
-    } finally {
-      navigate("/auth");
-    }
+    await supabase.auth.signOut();
+    navigate("/auth");
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 flex gap-1">
+           <div className="w-2 h-full bg-primary animate-ping" />
+           <div className="w-2 h-full bg-secondary animate-ping delay-75" />
+           <div className="w-2 h-full bg-primary animate-ping delay-150" />
+        </div>
       </div>
     );
   }
@@ -55,101 +42,117 @@ const AppLayout = () => {
 
   const navItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Mock Interview", url: "/mock-interview", icon: Mic },
+    { title: "Resume Builder", url: "/resume-builder", icon: FileEdit },
+    { title: "Skill Analyzer", url: "/skill-analyzer", icon: Target, isNew: true },
+    { title: "Discovery", url: "/discovery", icon: Map, isNew: true },
+    { title: "Trends", url: "/trends", icon: LineChart },
+    { title: "Simulation", url: "/simulation", icon: Eye },
+    { title: "Mentor Chat", url: "/career-chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ];
 
   return (
-    <div className="min-h-screen flex w-full">
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-border">
-        <div className="p-6">
-          <Link to="/dashboard" className="group flex items-center gap-2.5 transition-transform duration-300 hover:scale-105">
-            <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow duration-300">
-              <Compass className="w-5 h-5 text-primary-foreground" />
+    <div className="min-h-screen flex bg-background w-full overflow-hidden">
+      {/* Floating Premium Sidebar */}
+      <aside className="hidden lg:flex flex-col w-[280px] h-[calc(100vh-2rem)] my-4 ml-4 rounded-3xl bg-white/[0.02] border border-white/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden z-20">
+        
+        {/* Glow effect back */}
+        <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl pointer-events-none" />
+
+        <div className="p-8 pt-10">
+          <Link to="/dashboard" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+              <Compass className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold font-display text-sidebar-primary-foreground relative">
+            <span className="text-2xl font-black font-display tracking-tight text-white group-hover:text-primary transition-colors">
               CareerPilot
-              <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full rounded-full" />
             </span>
           </Link>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              end
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-            >
-              <item.icon className="w-4 h-4" />
-              {item.title}
-            </NavLink>
-          ))}
+        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.url;
+            return (
+              <Link
+                key={item.url}
+                to={item.url}
+                className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
+                  isActive 
+                    ? "bg-white/10 text-white shadow-inner border border-white/10" 
+                    : "text-white/50 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className={`w-5 h-5 transition-colors ${isActive ? "text-primary" : "text-white/40 group-hover:text-white/70"}`} />
+                  <span className={`text-sm font-medium ${isActive ? "font-bold" : ""}`}>{item.title}</span>
+                </div>
+                {item.isNew && (
+                  <span className="text-[10px] uppercase tracking-wider font-bold bg-secondary/20 text-secondary px-2 py-0.5 rounded-full">New</span>
+                )}
+                {isActive && <motion.div layoutId="nav-indicator" className="w-1 h-5 rounded-full bg-primary absolute right-2" />}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="p-3 space-y-1 border-t border-sidebar-border">
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {isDark ? "Light Mode" : "Dark Mode"}
-          </button>
+        <div className="p-6 mt-auto">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all duration-300 font-medium text-sm"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            Sign Out
           </button>
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="flex-1 flex flex-col">
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
-          <Link to="/dashboard" className="group flex items-center gap-2 transition-transform duration-300 hover:scale-105">
-            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
-              <Compass className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold font-display relative">
-              CareerPilot
-              <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full rounded-full" />
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)}>
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </header>
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-auto w-full relative h-[100vh]">
+        {/* Universal Mesh gradient behind App Layout pages */}
+        <div className="fixed inset-0 pointer-events-none z-0 opacity-40">
+           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px]" />
+           <div className="absolute top-[40%] right-[-10%] w-[40%] h-[60%] bg-secondary/10 rounded-full blur-[120px]" />
+        </div>
+        
+        <div className="relative z-10 w-full h-full lg:px-8 py-8 px-4">
+          {/* Mobile Header */}
+          <header className="lg:hidden flex items-center justify-between p-4 mb-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-xl">
+             <Link to="/dashboard" className="flex items-center gap-2">
+               <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-secondary flex items-center justify-center">
+                 <Compass className="w-4 h-4 text-white" />
+               </div>
+               <span className="font-bold font-display text-lg text-white">CareerPilot</span>
+             </Link>
+             <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white/50 hover:text-white hover:bg-white/10">
+               <LogOut className="w-5 h-5" />
+             </Button>
+          </header>
 
-        {/* Mobile nav */}
-        <nav className="md:hidden flex border-b border-border bg-background">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              end
-              className="flex-1 flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              activeClassName="text-primary border-b-2 border-primary font-medium"
-            >
-              <item.icon className="w-4 h-4" />
-              {item.title}
-            </NavLink>
-          ))}
-        </nav>
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} className="h-full">
+            <Outlet />
+          </motion.div>
+        </div>
+      </main>
 
-        <main className="flex-1 overflow-auto">
-          <Outlet />
-        </main>
-      </div>
+      {/* Mobile Bottom Nav */}
+      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex justify-around p-2 z-50">
+          {navItems.slice(0, 5).map((item) => {
+            const isActive = location.pathname === item.url;
+            return (
+              <Link
+                key={item.url}
+                to={item.url}
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all ${
+                  isActive ? "text-primary" : "text-white/40"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-[10px] font-medium">{item.title}</span>
+              </Link>
+            )
+          })}
+      </nav>
     </div>
   );
 };

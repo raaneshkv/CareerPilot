@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Upload, FileText, Sparkles, Loader2, Rocket, Mic, Flame } from "lucide-react";
+import { Upload, FileText, Sparkles, Loader2, Rocket, Mic, Flame, Map } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +21,7 @@ const Dashboard = () => {
   const [generating, setGenerating] = useState(false);
   const [activeRoadmapId, setActiveRoadmapId] = useState<string | null>(null);
   const [isCriticMode, setIsCriticMode] = useState(false);
+  const [targetRoleInput, setTargetRoleInput] = useState("");
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -144,6 +146,50 @@ const Dashboard = () => {
     refetch();
   };
 
+  const handleGenerateDirect = async () => {
+    if (!targetRoleInput || !user) return;
+    setGenerating(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-resume", {
+        body: { roadmapTarget: targetRoleInput },
+      });
+      if (error) throw error;
+
+      let roadmapData = data.roadmap;
+
+      if (isCriticMode) {
+        roadmapData.summary = "🔥 ROAST MODE: " + (roadmapData.summary || "") +
+          "\nHonestly, this goal is ambitious for your current level. You've got a lot of work to do.";
+      }
+
+      const { data: saved, error: saveError } = await supabase
+        .from("roadmaps")
+        .insert({
+          user_id: user.id,
+          resume_file_name: `Goal: ${targetRoleInput}`,
+          resume_storage_path: `direct-goal`,
+          roadmap_data: roadmapData,
+        })
+        .select("id")
+        .single();
+      if (saveError) throw saveError;
+
+      setActiveRoadmapId(saved.id);
+      setTargetRoleInput("");
+      refetch();
+      if (isCriticMode) {
+        toast.success("Goal roasted! Good luck.", { icon: "🔥" });
+      } else {
+        toast.success("Roadmap generated from goal successfully!");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate roadmap from goal");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Student";
 
   return (
@@ -218,8 +264,39 @@ const Dashboard = () => {
             {generating ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing Resume...</>
             ) : (
-              <><Sparkles className="w-4 h-4 mr-2" /> Generate Roadmap</>
+              <><Sparkles className="w-4 h-4 mr-2" /> Generate from Resume</>
             )}
+          </Button>
+        </div>
+
+        {/* OR Divider */}
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground font-semibold">Or Generative from Scratch</span>
+          </div>
+        </div>
+
+        {/* Direct Goal Input */}
+        <div className="flex flex-col sm:flex-row items-end gap-4">
+          <div className="flex-1 space-y-2 w-full">
+            <Label>Target Career Goal</Label>
+            <Input 
+              value={targetRoleInput}
+              onChange={e => setTargetRoleInput(e.target.value)}
+              placeholder="e.g. Senior Machine Learning Engineer" 
+              className="bg-background"
+            />
+          </div>
+          <Button
+            onClick={handleGenerateDirect}
+            disabled={!targetRoleInput || generating}
+            className="gradient-bg text-primary-foreground sm:w-auto w-full"
+            size="lg"
+          >
+            <Map className="w-4 h-4 mr-2" /> Generate Roadmap
           </Button>
         </div>
       </motion.div>
