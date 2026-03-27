@@ -7,6 +7,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Compass, ArrowRight, Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,13 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   // Force dark mode for aesthetics
   useEffect(() => {
@@ -35,7 +43,6 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome to the Matrix.");
-        navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -47,7 +54,6 @@ const Auth = () => {
         });
         if (error) throw error;
         toast.success("Identity registered. Welcome aboard.");
-        navigate("/dashboard");
       }
     } catch (error: any) {
       toast.error(error.message);
