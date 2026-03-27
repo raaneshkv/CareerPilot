@@ -43,6 +43,7 @@ export default function SkillAnalyzer() {
           xp: 850,
           difficulty: "Epic",
           course: "Complete Node.js Developer Course (Udemy)",
+          url: "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/",
           duration: "4 weeks",
           icon: <Swords className="w-5 h-5 text-indigo-400" />
         },
@@ -52,6 +53,7 @@ export default function SkillAnalyzer() {
           xp: 1200,
           difficulty: "Legendary",
           course: "AWS Certified Developer Associate (Coursera)",
+          url: "https://www.coursera.org/professional-certificates/aws-cloud-solutions-architect",
           duration: "6 weeks",
           icon: <Shield className="w-5 h-5 text-amber-500" />
         },
@@ -61,6 +63,7 @@ export default function SkillAnalyzer() {
           xp: 450,
           difficulty: "Rare",
           course: "Docker Mastery: with Kubernetes (Udemy)",
+          url: "https://www.udemy.com/course/docker-mastery/",
           duration: "3 weeks",
           icon: <Gem className="w-5 h-5 text-blue-400" />
         },
@@ -70,6 +73,7 @@ export default function SkillAnalyzer() {
           xp: 900,
           difficulty: "Epic",
           course: "Grokking the System Design Interview",
+          url: "https://www.educative.io/courses/grokking-the-system-design-interview",
           duration: "5 weeks",
           icon: <Crown className="w-5 h-5 text-purple-500" />
         }
@@ -313,7 +317,10 @@ export default function SkillAnalyzer() {
                         </div>
                         
                         <div className="flex items-center gap-3 shrink-0 mt-2 sm:mt-0">
-                          <Button className="gradient-bg gap-2 sm:w-auto w-full group-hover:animate-pulse">
+                          <Button 
+                            className="gradient-bg gap-2 sm:w-auto w-full group-hover:animate-pulse"
+                            onClick={() => window.open(quest.url, "_blank")}
+                          >
                             Accept Quest <ArrowRight className="w-4 h-4" />
                           </Button>
                         </div>

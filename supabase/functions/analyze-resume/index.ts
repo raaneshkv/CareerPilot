@@ -41,7 +41,7 @@ Rules:
 - currentLevel is the candidate's estimated proficiency (0-100) based on resume evidence.
 - targetLevel is the recommended proficiency for career readiness (always > currentLevel).
 - Provide 3-5 concepts per node.
-- Provide at least 1 real resource per category (youtube, docs, github) with valid URLs.
+- Provide at least 1 real, RECENT (from the last 1-2 years) and highly-rated resource per category (youtube, docs, github) with valid URLs. Do NOT suggest outdated resources or deprecated tutorials. Focus on modern standards.
 - Provide 4-6 career_roles and all current_skills found in the resume.
 - Be specific and actionable based on the resume content.
 - Categories should reflect the skill domain accurately.`;

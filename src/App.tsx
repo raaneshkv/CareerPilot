@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Roadmap from "./pages/Roadmap";
 import Profile from "./pages/Profile";
 import MockInterview from "./pages/MockInterview";
 import ResumeBuilder from "./pages/ResumeBuilder";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/roadmap" element={<Roadmap />} />
               <Route path="/resume-builder" element={<ResumeBuilder />} />
               <Route path="/skill-analyzer" element={<SkillAnalyzer />} />
               <Route path="/trends" element={<Trends />} />

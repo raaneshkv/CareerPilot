@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Compass, LayoutDashboard, User, LogOut, Mic, FileEdit, Target, LineChart, MessageSquare, Eye, Map, ChevronRight } from "lucide-react";
+import { Compass, LayoutDashboard, User, LogOut, Mic, FileEdit, Target, LineChart, MessageSquare, Eye, Map, ChevronRight, Route } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -42,11 +42,13 @@ const AppLayout = () => {
 
   const navItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Roadmap", url: "/roadmap", icon: Route },
     { title: "Resume Builder", url: "/resume-builder", icon: FileEdit },
     { title: "Skill Analyzer", url: "/skill-analyzer", icon: Target, isNew: true },
     { title: "Discovery", url: "/discovery", icon: Map, isNew: true },
     { title: "Trends", url: "/trends", icon: LineChart },
     { title: "Simulation", url: "/simulation", icon: Eye },
+    { title: "Mock Interview", url: "/mock-interview", icon: Mic, isNew: true },
     { title: "Mentor Chat", url: "/career-chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ];
@@ -135,8 +137,17 @@ const AppLayout = () => {
         </div>
       </main>
 
+      {/* Floating Mentor Chat */}
+      <Link
+        to="/career-chat"
+        className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 w-14 h-14 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:bg-primary/90 hover:scale-105 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all z-50 group"
+        title="Talk to AI Mentor"
+      >
+        <MessageSquare className="w-6 h-6 group-hover:animate-bounce" />
+      </Link>
+
       {/* Mobile Bottom Nav */}
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex justify-around p-2 z-50">
+      <nav className="lg:hidden fixed bottom-4 left-4 right-24 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex justify-around p-2 z-40">
           {navItems.slice(0, 5).map((item) => {
             const isActive = location.pathname === item.url;
             return (

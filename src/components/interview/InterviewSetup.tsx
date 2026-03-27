@@ -4,6 +4,7 @@ import { Mic, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -54,10 +55,23 @@ const InterviewSetup = ({ onStart }: Props) => {
       // Try to get resume text
       let resumeText = "";
       if (roadmap?.resume_storage_path) {
-        const { data } = await supabase.storage.from("resumes").download(roadmap.resume_storage_path);
-        if (data) resumeText = await data.text();
+        try {
+          const { data, error } = await supabase.storage.from("resumes").download(roadmap.resume_storage_path);
+          if (error) {
+            console.warn("Could not download resume for mock interview context:", error);
+          } else if (data) {
+            resumeText = await data.text();
+          }
+        } catch (downloadErr) {
+          console.warn("Resume download failed, proceeding without it:", downloadErr);
+        }
       }
       await onStart(selectedRole, skills, resumeText);
+    } catch (err: any) {
+      console.error("Failed to start mock interview:", err);
+      // Ensure we display an error toast here if something unexpectedly throws
+      // Although onStart has its own try/catch, it's good to be safe.
+      toast.error(err.message || "Failed to start the interview setup.");
     } finally {
       setLoading(false);
     }

@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 const Profile = () => {
   const { user, profile, refetchProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
@@ -27,6 +28,8 @@ const Profile = () => {
       return data;
     },
     enabled: !!user,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const handleSave = async () => {
@@ -38,6 +41,13 @@ const Profile = () => {
         .update({ full_name: fullName })
         .eq("user_id", user.id);
       if (error) throw error;
+      
+      if (email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email });
+        if (emailError) throw emailError;
+        toast.info("A confirmation link has been sent to your email.");
+      }
+
       refetchProfile();
       toast.success("Profile updated!");
     } catch (error: any) {
@@ -90,7 +100,11 @@ const Profile = () => {
             <Label className="flex items-center gap-2">
               <Mail className="w-4 h-4" /> Email
             </Label>
-            <Input value={user?.email || ""} disabled className="opacity-60" />
+            <Input 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              placeholder="Your email address" 
+            />
           </div>
 
           <Button onClick={handleSave} disabled={saving} className="gradient-bg text-primary-foreground">
@@ -114,7 +128,7 @@ const Profile = () => {
               <div
                 key={rm.id}
                 className="glass-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => navigate(`/dashboard?id=${rm.id}`)}
+                onClick={() => navigate(`/roadmap?id=${rm.id}`)}
               >
                 <FileText className="w-5 h-5 text-primary" />
                 <div>

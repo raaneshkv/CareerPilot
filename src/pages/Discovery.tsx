@@ -21,6 +21,65 @@ const PREDEFINED_PAINS = [
   "I don't want to talk to customers",
 ];
 
+const ALL_CAREERS = [
+  {
+    title: "Technical Writer",
+    salary: "$70k - $120k",
+    idealTraits: ["Analytical", "Detail-Oriented", "Independent"],
+    idealPains: ["I hate writing code", "I don't want to manage people", "I dislike constant meetings"],
+    baseReason: "Technical writing lets you stay in tech independently, focusing on details rather than writing code.",
+  },
+  {
+    title: "Data Analyst",
+    salary: "$65k - $110k",
+    idealTraits: ["Analytical", "Detail-Oriented", "Routine-Loving"],
+    idealPains: ["I don't want to talk to customers", "I dislike constant meetings", "I don't want to manage people"],
+    baseReason: "Analyzing data fits your preference for independent, routine-focused work without customer interaction.",
+  },
+  {
+    title: "UX Researcher",
+    salary: "$80k - $130k",
+    idealTraits: ["Analytical", "Big Picture Thinker", "Detail-Oriented"],
+    idealPains: ["I hate writing code", "I hate unpredictable hours"],
+    baseReason: "Leverages your analytical mind to study user behavior without requiring programming. Usually involves structured hours.",
+  },
+  {
+    title: "DevOps Engineer",
+    salary: "$110k - $160k",
+    idealTraits: ["Analytical", "Independent", "Detail-Oriented"],
+    idealPains: ["I don't want to talk to customers", "I don't want to manage people"],
+    baseReason: "Highly technical role that minimizes customer interaction and management duties, allowing you to focus on infrastructure.",
+  },
+  {
+    title: "Product Manager",
+    salary: "$100k - $150k",
+    idealTraits: ["Big Picture Thinker", "Extroverted", "Team Player"],
+    idealPains: ["I hate writing code", "I don't want to manage people"],
+    baseReason: "You manage the product, not the people. Perfect for big-picture thinkers who want to collaborate without coding.",
+  },
+  {
+    title: "Frontend Developer",
+    salary: "$80k - $140k",
+    idealTraits: ["Creative", "Detail-Oriented", "Team Player"],
+    idealPains: ["I hate unpredictable hours", "I don't want to talk to customers"],
+    baseReason: "Combines creativity with technical skills in a usually stable, team-focused environment without direct client demands.",
+  },
+  {
+    title: "Scrum Master",
+    salary: "$85k - $125k",
+    idealTraits: ["Team Player", "Extroverted", "Routine-Loving"],
+    idealPains: ["I hate writing code", "I don't want to manage people", "I hate unpredictable hours"],
+    baseReason: "You facilitate the team's process with predictable schedules and high interaction, without coding or direct authority.",
+  },
+  {
+    title: "Cybersecurity Analyst",
+    salary: "$90k - $140k",
+    idealTraits: ["Analytical", "Detail-Oriented", "Independent"],
+    idealPains: ["I don't want to talk to customers", "I dislike constant meetings"],
+    baseReason: "Focus entirely on protecting networks and systems. Deeply analytical work with minimal external meetings.",
+  }
+];
+
 export default function Discovery() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -46,26 +105,37 @@ export default function Discovery() {
     setStep(3); // Loading/Results step
 
     setTimeout(() => {
-      setResults([
-        {
-          title: "Technical Writer",
-          match: 95,
-          reason: "You are analytical and detail-oriented but hate writing code and constant meetings. Technical writing lets you stay in tech independently.",
-          salary: "$70k - $120k",
-        },
-        {
-          title: "Data Analyst",
-          match: 88,
-          reason: "Since you prefer independent, routine-focused work and want to avoid customer interaction, analyzing data fits perfectly.",
-          salary: "$65k - $110k",
-        },
-        {
-          title: "UX Researcher",
-          match: 82,
-          reason: "Leverages your analytical mind without requiring programming. Usually involves structured, predictable hours.",
-          salary: "$80k - $130k",
+      // Score each career based on user inputs
+      const scoredCareers = ALL_CAREERS.map(career => {
+        let score = 40; // Base score
+        
+        // Add points for matching traits
+        const matchedTraits = career.idealTraits.filter(t => traits.includes(t));
+        score += matchedTraits.length * 12;
+        
+        // Add points for matching pains (things they want to avoid)
+        const matchedPains = career.idealPains.filter(p => pains.includes(p));
+        score += matchedPains.length * 15;
+
+        // Custom pain gives a slight random boost just to simulate AI reading it
+        if (customPain.length > 5) {
+          score += Math.floor(Math.random() * 8);
         }
-      ]);
+
+        // Cap at 98
+        score = Math.min(score, 98);
+
+        return {
+          ...career,
+          match: score,
+          reason: career.baseReason
+        };
+      });
+
+      // Sort by score descending and take top 3
+      scoredCareers.sort((a, b) => b.match - a.match);
+      setResults(scoredCareers.slice(0, 3));
+
       setIsGenerating(false);
     }, 2500);
   };

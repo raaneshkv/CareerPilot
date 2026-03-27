@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
@@ -219,9 +220,9 @@ export default function Trends() {
               <p className="text-sm text-primary-foreground/90 leading-relaxed">
                 Not sure how to pivot your career given these trends? Talk to our AI Career Mentor to build a transition strategy.
               </p>
-              <a href="/career-chat" className="inline-flex w-full items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-background text-primary hover:bg-background/90 font-bold">
+              <Link to="/career-chat" className="inline-flex w-full items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-background text-primary hover:bg-background/90 font-bold">
                 Talk to AI Mentor
-              </a>
+              </Link>
             </CardContent>
           </Card>
         </motion.div>

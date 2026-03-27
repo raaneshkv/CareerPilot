@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { FileDown, Sparkles, Loader2, Target, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import html2pdf from "html2pdf.js";
 
 export default function ResumeBuilder() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -47,7 +48,46 @@ export default function ResumeBuilder() {
   };
 
   const handleExport = () => {
-    toast.success("Resume downloaded as PDF!");
+    setIsGenerating(true);
+    const element = document.createElement("div");
+    
+    element.innerHTML = `
+      <div style="padding: 40px; font-family: 'Inter', sans-serif; color: #1f2937;">
+        <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 8px; color: #111827;">${resumeData.name}</h1>
+        <h2 style="font-size: 20px; font-weight: 500; color: #4b5563; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #e5e7eb;">${resumeData.role}</h2>
+        
+        <div style="margin-bottom: 32px;">
+          <h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Skills</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${resumeData.skills.split(',').map(skill => 
+              `<span style="background-color: #f3f4f6; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500;">${skill.trim()}</span>`
+            ).join('')}
+          </div>
+        </div>
+        
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Professional Experience</h3>
+          <p style="font-size: 15px; line-height: 1.6; white-space: pre-wrap; color: #374151;">${resumeData.experience}</p>
+        </div>
+      </div>
+    `;
+
+    const opt = {
+      margin: 15,
+      filename: `${resumeData.name.replace(/\\s+/g, '_')}_Resume.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      setIsGenerating(false);
+      toast.success("Resume downloaded as PDF!");
+    }).catch((err: any) => {
+      console.error(err);
+      setIsGenerating(false);
+      toast.error("Failed to generate PDF");
+    });
   };
 
   return (
