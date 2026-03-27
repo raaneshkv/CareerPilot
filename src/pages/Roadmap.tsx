@@ -14,6 +14,40 @@ import PersonalizedRoadmap from "@/components/PersonalizedRoadmap";
 import RoadmapDisplay from "@/components/RoadmapDisplay";
 import type { RoadmapNodeData } from "@/components/RoadmapNode";
 
+import * as pdfjsLib from "pdfjs-dist";
+import mammoth from "mammoth";
+
+// Ensure pdfjs worker is set
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+// Helper to extract text from files before sending to ChatGPT
+const extractTextFromFile = async (file: File): Promise<string> => {
+  try {
+    if (file.type === "application/pdf") {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const strings = content.items.map((item: any) => item.str);
+        text += strings.join(" ") + "\n";
+      }
+      return text;
+    } else if (
+      file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value;
+    }
+  } catch (error) {
+    console.error("Error extracting text:", error);
+  }
+  return await file.text();
+};
+
 const Roadmap = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -86,7 +120,7 @@ const Roadmap = () => {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const text = await file.text();
+      const text = await extractTextFromFile(file);
 
       const { data, error } = await supabase.functions.invoke("analyze-resume", {
         body: { resumeText: text, fileName: file.name },
