@@ -16,6 +16,7 @@ import Trends from "./pages/Trends";
 import CareerChat from "./pages/CareerChat";
 import Simulation from "./pages/Simulation";
 import Discovery from "./pages/Discovery";
+import Finance from "./pages/Finance";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/career-chat" element={<CareerChat />} />
               <Route path="/simulation" element={<Simulation />} />
               <Route path="/discovery" element={<Discovery />} />
+              <Route path="/finance" element={<Finance />} />
               <Route path="/mock-interview" element={<MockInterview />} />
               <Route path="/profile" element={<Profile />} />
             </Route>

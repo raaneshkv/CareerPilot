@@ -40,11 +40,11 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome to the Matrix.");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -53,7 +53,15 @@ const Auth = () => {
           },
         });
         if (error) throw error;
-        toast.success("Identity registered. Welcome aboard.");
+        
+        if (!data.session) {
+          toast.warning("Verification Required!", {
+            description: "Supabase requires email confirmation. Please check your inbox and click the verification link to proceed.",
+            duration: 8000
+          });
+        } else {
+          toast.success("Identity registered. Welcome aboard.");
+        }
       }
     } catch (error: any) {
       toast.error(error.message);

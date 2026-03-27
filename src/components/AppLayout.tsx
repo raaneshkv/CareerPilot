@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Compass, LayoutDashboard, User, LogOut, Mic, FileEdit, Target, LineChart, MessageSquare, Eye, Map, ChevronRight, Route } from "lucide-react";
+import { Compass, LayoutDashboard, User, LogOut, Mic, FileEdit, Target, LineChart, MessageSquare, Eye, Map, ChevronRight, Route, Calculator } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -46,6 +46,7 @@ const AppLayout = () => {
     { title: "Resume Builder", url: "/resume-builder", icon: FileEdit },
     { title: "Skill Analyzer", url: "/skill-analyzer", icon: Target, isNew: true },
     { title: "Discovery", url: "/discovery", icon: Map, isNew: true },
+    { title: "Financial Engine", url: "/finance", icon: Calculator, isNew: true },
     { title: "Trends", url: "/trends", icon: LineChart },
     { title: "Simulation", url: "/simulation", icon: Eye },
     { title: "Mock Interview", url: "/mock-interview", icon: Mic, isNew: true },

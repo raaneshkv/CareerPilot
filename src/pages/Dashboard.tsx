@@ -8,7 +8,8 @@ import {
   LineChart, 
   Eye, 
   Mic, 
-  MessageSquare 
+  MessageSquare,
+  Calculator
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -76,6 +77,14 @@ const features = [
     url: "/simulation",
     color: "from-rose-400 to-red-600",
     delay: 0.45,
+  },
+  {
+    title: "Financial Engine",
+    description: "Quantify the ROI and break-even timelines of your next target career role.",
+    icon: Calculator,
+    url: "/finance",
+    color: "from-green-400 to-emerald-600",
+    delay: 0.5,
   },
 ];
 

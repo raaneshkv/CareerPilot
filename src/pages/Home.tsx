@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Target, TrendingUp, FileText, BarChart3, Shield, Zap, BookOpen, Layers, Rocket, BrainCircuit, Eye, Map } from "lucide-react";
+import { ArrowRight, Sparkles, Target, TrendingUp, FileText, BarChart3, Shield, Zap, BookOpen, Layers, Rocket, BrainCircuit, Eye, Map, Calculator } from "lucide-react";
 import PublicNavbar from "@/components/PublicNavbar";
 
 const Home = () => {
@@ -127,7 +127,8 @@ const Home = () => {
               { icon: TrendingUp, title: "Real-time Trends", desc: "See where the market is moving before the crowd does." },
               { icon: BrainCircuit, title: "AI Mentor", desc: "24/7 personal career guidance trained on elite tech profiles." },
               { icon: Eye, title: "Future Simulation", desc: "Predict salary and stability 10 years out based on current choices." },
-              { icon: Map, title: "Career Discovery", desc: "Match your psychology directly to unconsidered career paths." }
+              { icon: Map, title: "Career Discovery", desc: "Match your psychology directly to unconsidered career paths." },
+              { icon: Calculator, title: "Financial Engine", desc: "Calculate the exact ROI of your next target role and plan transition affordabilities." }
             ].map((feat, i) => (
               <motion.div 
                 key={i}
