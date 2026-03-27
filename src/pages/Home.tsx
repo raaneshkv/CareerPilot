@@ -74,28 +74,7 @@ const Home = () => {
             </Button>
           </motion.div>
 
-          {/* Social Proof Metrics */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 mt-16 pt-8 border-t border-white/10 w-full max-w-3xl mx-auto"
-          >
-            <div className="flex flex-col items-center">
-              <span className="text-4xl sm:text-5xl font-black font-display text-white">12,450+</span>
-              <span className="text-xs text-white/40 uppercase tracking-widest font-semibold mt-2">Platform Views</span>
-            </div>
-            <div className="w-px h-12 bg-white/10 hidden sm:block" />
-            <div className="flex flex-col items-center">
-              <span className="text-4xl sm:text-5xl font-black font-display text-emerald-400">8,200+</span>
-              <span className="text-xs text-white/40 uppercase tracking-widest font-semibold mt-2">Active Logins</span>
-            </div>
-            <div className="w-px h-12 bg-white/10 hidden sm:block" />
-            <div className="flex flex-col items-center">
-              <span className="text-4xl sm:text-5xl font-black font-display text-primary">94%</span>
-              <span className="text-xs text-white/40 uppercase tracking-widest font-semibold mt-2">Placement Rate</span>
-            </div>
-          </motion.div>
+
 
           {/* Floating UI Mocks */}
           <div className="relative mt-20 w-full max-w-5xl mx-auto aspect-[16/9] rounded-2xl overflow-hidden border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl p-2 hidden md:block">
