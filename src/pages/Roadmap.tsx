@@ -18,12 +18,15 @@ import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
 // Ensure pdfjs worker is set
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // Helper to extract text from files before sending to ChatGPT
 const extractTextFromFile = async (file: File): Promise<string> => {
   try {
-    if (file.type === "application/pdf") {
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === "application/pdf";
+    const isDocx = file.name.toLowerCase().endsWith('.docx') || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+    if (isPdf) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let text = "";
@@ -34,10 +37,7 @@ const extractTextFromFile = async (file: File): Promise<string> => {
         text += strings.join(" ") + "\n";
       }
       return text;
-    } else if (
-      file.type ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ) {
+    } else if (isDocx) {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer });
       return result.value;
@@ -96,17 +96,24 @@ const Roadmap = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
+      const isPdf = selected.name.toLowerCase().endsWith('.pdf');
+      const isDocx = selected.name.toLowerCase().endsWith('.docx');
+      
       const validTypes = [
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ];
-      if (!validTypes.includes(selected.type)) {
+      // Check both type and extension just in case OS doesn't provide type
+      if (!validTypes.includes(selected.type) && !isPdf && !isDocx) {
         toast.error("Please upload a PDF or DOCX file");
+        if (e.target) e.target.value = '';
         return;
       }
       setFile(selected);
       setActiveRoadmapId(null);
     }
+    // Reset file input so the same file can be selected again if needed
+    if (e.target) e.target.value = '';
   };
 
   const handleGenerate = async () => {
@@ -114,7 +121,10 @@ const Roadmap = () => {
     setGenerating(true);
 
     try {
-      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+      // Sanitize filename to avoid supabase storage issues with special chars
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const filePath = `${user.id}/${Date.now()}_${safeName}`;
+      
       const { error: uploadError } = await supabase.storage
         .from("resumes")
         .upload(filePath, file);

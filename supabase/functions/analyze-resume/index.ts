@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { resumeText, fileName } = await req.json();
+    const { resumeText, fileName, roadmapTarget } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("API key not configured");
 
@@ -56,7 +56,9 @@ Rules:
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this resume (file: ${fileName}):\n\n${resumeText}` },
+          { role: "user", content: roadmapTarget 
+            ? `Generate a career roadmap from scratch specifically for this goal: ${roadmapTarget}` 
+            : `Analyze this resume (file: ${fileName}):\n\n${resumeText}` },
         ],
       }),
     });
