@@ -11,70 +11,170 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const MOCK_QUIZZES: Record<string, any[]> = {
+/* ---- Comprehensive Job Skill Requirements Database ---- */
+const JOB_SKILL_DB: Record<string, { skill: string; weight: number; course: string; url: string }[]> = {
+  "frontend developer": [
+    { skill: "React", weight: 95, course: "React - The Complete Guide", url: "https://www.udemy.com/course/react-the-complete-guide-incl-redux/" },
+    { skill: "JavaScript", weight: 90, course: "JavaScript: The Advanced Concepts", url: "https://www.udemy.com/course/advanced-javascript-concepts/" },
+    { skill: "TypeScript", weight: 85, course: "TypeScript Deep Dive", url: "https://basarat.gitbook.io/typescript/" },
+    { skill: "CSS/Tailwind", weight: 80, course: "CSS for JavaScript Developers", url: "https://css-for-js.dev/" },
+    { skill: "Next.js", weight: 75, course: "Next.js 14 Complete Course", url: "https://nextjs.org/learn" },
+    { skill: "Testing", weight: 65, course: "Testing JavaScript", url: "https://testingjavascript.com/" },
+    { skill: "Performance", weight: 60, course: "Web Performance Fundamentals", url: "https://frontendmasters.com/courses/web-perf/" },
+    { skill: "Git", weight: 70, course: "Git & GitHub Crash Course", url: "https://www.youtube.com/watch?v=RGOj5yH7evk" },
+  ],
+  "backend developer": [
+    { skill: "Node.js", weight: 90, course: "Complete Node.js Developer", url: "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/" },
+    { skill: "Python", weight: 85, course: "Python Backend Development", url: "https://www.udemy.com/course/100-days-of-code/" },
+    { skill: "SQL/PostgreSQL", weight: 90, course: "SQL and PostgreSQL Complete", url: "https://www.udemy.com/course/sql-and-postgresql/" },
+    { skill: "REST APIs", weight: 85, course: "REST API Design", url: "https://restfulapi.net/" },
+    { skill: "Docker", weight: 70, course: "Docker Mastery", url: "https://www.udemy.com/course/docker-mastery/" },
+    { skill: "System Design", weight: 75, course: "System Design Primer", url: "https://github.com/donnemartin/system-design-primer" },
+    { skill: "Authentication", weight: 65, course: "OAuth 2.0 Simplified", url: "https://www.oauth.com/" },
+    { skill: "Git", weight: 70, course: "Git & GitHub", url: "https://www.youtube.com/watch?v=RGOj5yH7evk" },
+  ],
+  "full stack developer": [
+    { skill: "React", weight: 90, course: "React Complete Guide", url: "https://www.udemy.com/course/react-the-complete-guide-incl-redux/" },
+    { skill: "Node.js", weight: 85, course: "Complete Node.js Developer", url: "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/" },
+    { skill: "TypeScript", weight: 80, course: "TypeScript Deep Dive", url: "https://basarat.gitbook.io/typescript/" },
+    { skill: "SQL", weight: 80, course: "SQL Complete Course", url: "https://www.udemy.com/course/sql-and-postgresql/" },
+    { skill: "Docker", weight: 65, course: "Docker Mastery", url: "https://www.udemy.com/course/docker-mastery/" },
+    { skill: "AWS/Cloud", weight: 70, course: "AWS Cloud Practitioner", url: "https://aws.amazon.com/certification/certified-cloud-practitioner/" },
+    { skill: "System Design", weight: 75, course: "System Design Primer", url: "https://github.com/donnemartin/system-design-primer" },
+    { skill: "Git", weight: 70, course: "Pro Git Book", url: "https://git-scm.com/book/en/v2" },
+  ],
+  "data scientist": [
+    { skill: "Python", weight: 95, course: "Python for Data Science", url: "https://www.coursera.org/professional-certificates/ibm-data-science" },
+    { skill: "Machine Learning", weight: 90, course: "ML Specialization by Andrew Ng", url: "https://www.coursera.org/specializations/machine-learning-introduction" },
+    { skill: "SQL", weight: 80, course: "SQL for Data Science", url: "https://www.coursera.org/learn/sql-for-data-science" },
+    { skill: "Statistics", weight: 85, course: "Statistics & Probability", url: "https://www.khanacademy.org/math/statistics-probability" },
+    { skill: "Pandas/NumPy", weight: 85, course: "Data Analysis with Python", url: "https://www.freecodecamp.org/learn/data-analysis-with-python/" },
+    { skill: "Deep Learning", weight: 70, course: "Deep Learning Specialization", url: "https://www.coursera.org/specializations/deep-learning" },
+    { skill: "Visualization", weight: 65, course: "Data Visualization with Python", url: "https://www.coursera.org/learn/python-for-data-visualization" },
+    { skill: "Git", weight: 55, course: "Git for Data Scientists", url: "https://www.youtube.com/watch?v=RGOj5yH7evk" },
+  ],
+  "devops engineer": [
+    { skill: "Docker", weight: 95, course: "Docker Mastery", url: "https://www.udemy.com/course/docker-mastery/" },
+    { skill: "Kubernetes", weight: 90, course: "Kubernetes Course", url: "https://www.udemy.com/course/certified-kubernetes-administrator-with-practice-tests/" },
+    { skill: "AWS/Cloud", weight: 90, course: "AWS Solutions Architect", url: "https://aws.amazon.com/certification/certified-solutions-architect-associate/" },
+    { skill: "CI/CD", weight: 85, course: "GitHub Actions CI/CD", url: "https://docs.github.com/en/actions" },
+    { skill: "Linux", weight: 85, course: "Linux Administration", url: "https://www.udemy.com/course/learn-linux-in-5-days/" },
+    { skill: "Terraform", weight: 75, course: "Terraform Up & Running", url: "https://www.terraformupandrunning.com/" },
+    { skill: "Monitoring", weight: 70, course: "Prometheus & Grafana", url: "https://prometheus.io/docs/introduction/overview/" },
+    { skill: "Python/Bash", weight: 70, course: "Scripting for DevOps", url: "https://www.udemy.com/course/python-for-devops/" },
+  ],
+  "machine learning engineer": [
+    { skill: "Python", weight: 95, course: "Python for ML", url: "https://www.coursera.org/specializations/machine-learning-introduction" },
+    { skill: "TensorFlow/PyTorch", weight: 90, course: "Deep Learning Specialization", url: "https://www.coursera.org/specializations/deep-learning" },
+    { skill: "Mathematics", weight: 85, course: "Mathematics for ML", url: "https://www.coursera.org/specializations/mathematics-machine-learning" },
+    { skill: "MLOps", weight: 80, course: "MLOps Specialization", url: "https://www.coursera.org/specializations/machine-learning-engineering-for-production-mlops" },
+    { skill: "Data Engineering", weight: 75, course: "Data Engineering on GCP", url: "https://www.coursera.org/professional-certificates/gcp-data-engineering" },
+    { skill: "NLP/CV", weight: 70, course: "NLP with Transformers", url: "https://huggingface.co/course/chapter1" },
+    { skill: "Cloud (AWS/GCP)", weight: 70, course: "AWS for ML", url: "https://aws.amazon.com/machine-learning/" },
+    { skill: "Docker", weight: 60, course: "Docker for Data Science", url: "https://www.udemy.com/course/docker-mastery/" },
+  ],
+};
+
+/* Default fallback skills for any role */
+const DEFAULT_SKILLS = [
+  { skill: "Programming", weight: 85, course: "CS50 by Harvard", url: "https://cs50.harvard.edu/" },
+  { skill: "Problem Solving", weight: 80, course: "LeetCode Practice", url: "https://leetcode.com/" },
+  { skill: "Communication", weight: 70, course: "Business Communication", url: "https://www.coursera.org/learn/wharton-communication" },
+  { skill: "Git/Version Control", weight: 75, course: "Pro Git", url: "https://git-scm.com/book/en/v2" },
+  { skill: "System Design", weight: 70, course: "System Design Primer", url: "https://github.com/donnemartin/system-design-primer" },
+  { skill: "Databases", weight: 75, course: "SQL Complete", url: "https://www.w3schools.com/sql/" },
+];
+
+const QUIZ_DB: Record<string, { q: string; options: string[]; answer: number }[]> = {
   "React": [
-    { q: "What hook is used to manage local state?", options: ["useEffect", "useState", "useContext", "useReducer"], answer: 1 },
-    { q: "What does the Virtual DOM do?", options: ["Updates the browser DOM directly", "Acts as a lightweight copy of the real DOM", "Parses CSS modules", "Handles API requests"], answer: 1 },
-    { q: "How do you pass data to a child component?", options: ["State", "Hooks", "Props", "Context"], answer: 2 },
+    { q: "What hook manages local component state in React?", options: ["useEffect", "useState", "useContext", "useReducer"], answer: 1 },
+    { q: "What does the Virtual DOM do?", options: ["Updates the browser DOM directly", "Acts as a lightweight copy of the real DOM for diffing", "Parses CSS modules", "Handles API requests"], answer: 1 },
+    { q: "How do you pass data to a child component?", options: ["State", "Hooks", "Props", "Context only"], answer: 2 },
   ],
   "Node.js": [
     { q: "Which engine powers Node.js?", options: ["SpiderMonkey", "V8", "Chakra", "JavaScriptCore"], answer: 1 },
-    { q: "How do you import a module in CommonJS?", options: ["import module from 'module'", "require('module')", "load('module')", "include('module')"], answer: 1 },
-    { q: "What is the global object in Node.js?", options: ["window", "document", "global", "process"], answer: 2 },
+    { q: "What is the event loop in Node.js?", options: ["A UI rendering cycle", "A mechanism for handling async operations", "A database query optimizer", "A load balancer"], answer: 1 },
+    { q: "Which module system does Node.js natively use?", options: ["AMD", "ES Modules only", "CommonJS", "SystemJS"], answer: 2 },
   ],
-  "AWS": [
-    { q: "Which service provides scalable cloud computing capacity?", options: ["S3", "Lambda", "EC2", "RDS"], answer: 2 },
-    { q: "What does S3 stand for?", options: ["Simple Storage System", "Standard Storage Service", "Simple Storage Service", "Secure Storage System"], answer: 2 },
-    { q: "Which service is a fully managed NoSQL database?", options: ["RDS", "DynamoDB", "Aurora", "Redshift"], answer: 1 },
+  "Python": [
+    { q: "What is a Python decorator?", options: ["A design pattern for classes", "A function that modifies another function", "A type annotation", "A loop construct"], answer: 1 },
+    { q: "What does 'pip' stand for?", options: ["Python Installation Package", "Pip Installs Packages", "Package In Python", "Python Is Perfect"], answer: 1 },
+    { q: "Which data structure is immutable in Python?", options: ["List", "Dictionary", "Tuple", "Set"], answer: 2 },
+  ],
+  "SQL": [
+    { q: "What does JOIN do in SQL?", options: ["Deletes duplicate rows", "Combines rows from two or more tables", "Sorts the result set", "Creates new tables"], answer: 1 },
+    { q: "What is normalization?", options: ["Adding indexes", "Organizing data to reduce redundancy", "Encrypting data", "Adding foreign keys"], answer: 1 },
+    { q: "Which clause filters groups in SQL?", options: ["WHERE", "FILTER", "HAVING", "GROUP"], answer: 2 },
   ],
   "Docker": [
-    { q: "What command creates a Docker container?", options: ["docker start", "docker run", "docker launch", "docker exec"], answer: 1 },
-    { q: "What is a Dockerfile used for?", options: ["Storing logs", "Monitoring containers", "Building images", "Networking containers"], answer: 2 },
-    { q: "Which tool orchestrates multiple containers?", options: ["Docker Swarm / Kubernetes", "Jenkins", "Ansible", "Terraform"], answer: 0 },
+    { q: "What command runs a Docker container?", options: ["docker start", "docker run", "docker launch", "docker exec"], answer: 1 },
+    { q: "What is a Dockerfile used for?", options: ["Storing logs", "Monitoring containers", "Building container images", "Networking containers"], answer: 2 },
+    { q: "Which tool orchestrates multiple containers?", options: ["Docker Compose / Kubernetes", "Jenkins", "Ansible", "Terraform"], answer: 0 },
   ],
   "System Design": [
-    { q: "What does a load balancer do?", options: ["Stores data", "Distributes traffic", "Encrypts traffic", "Monitors latency"], answer: 1 },
-    { q: "What is the CAP theorem?", options: ["Consistency, Automation, Partition tolerance", "Consistency, Availability, Partition tolerance", "Concurrency, Availability, Persistence", "Caching, Availability, Partition tolerance"], answer: 1 },
+    { q: "What does a load balancer do?", options: ["Stores data", "Distributes incoming traffic across servers", "Encrypts traffic", "Monitors latency"], answer: 1 },
+    { q: "What is the CAP theorem?", options: ["Consistency, Automation, Partition", "Consistency, Availability, Partition tolerance", "Concurrency, Availability, Persistence", "Caching, Availability, Partition"], answer: 1 },
     { q: "What is database sharding?", options: ["Replicating data", "Normalizing tables", "Partitioning data across multiple machines", "Adding indexes"], answer: 2 },
-  ]
+  ],
+  "AWS/Cloud": [
+    { q: "Which AWS service provides scalable computing?", options: ["S3", "Lambda", "EC2", "RDS"], answer: 2 },
+    { q: "What does S3 stand for?", options: ["Simple Storage System", "Standard Storage Service", "Simple Storage Service", "Secure Storage System"], answer: 2 },
+    { q: "Which service is a managed NoSQL database?", options: ["RDS", "DynamoDB", "Aurora", "Redshift"], answer: 1 },
+  ],
 };
 
-function generateQuizForSkill(skill: string) {
-  const keys = Object.keys(MOCK_QUIZZES);
-  let key = keys.find(k => skill.toLowerCase().includes(k.toLowerCase()));
-  if (!key) key = "React"; 
-  return MOCK_QUIZZES[key];
+function getQuizForSkill(skill: string) {
+  const keys = Object.keys(QUIZ_DB);
+  const key = keys.find(k => skill.toLowerCase().includes(k.toLowerCase()));
+  return QUIZ_DB[key || "System Design"];
+}
+
+function findBestJobMatch(targetJob: string): { skill: string; weight: number; course: string; url: string }[] {
+  const lower = targetJob.toLowerCase();
+  for (const [key, skills] of Object.entries(JOB_SKILL_DB)) {
+    if (lower.includes(key) || key.includes(lower.replace('senior ', '').replace('junior ', '').replace('lead ', ''))) {
+      return skills;
+    }
+  }
+  // Partial match
+  for (const [key, skills] of Object.entries(JOB_SKILL_DB)) {
+    const keyWords = key.split(' ');
+    if (keyWords.some(w => lower.includes(w))) return skills;
+  }
+  return DEFAULT_SKILLS;
 }
 
 const ICON_MAP: Record<string, any> = {
-  "Swords": Swords,
-  "Shield": Shield,
-  "Gem": Gem,
-  "Crown": Crown,
+  "Swords": Swords, "Shield": Shield, "Gem": Gem, "Crown": Crown,
 };
+
+const QUEST_ICONS = ["Swords", "Shield", "Gem", "Crown"];
+const QUEST_COLORS = [
+  { iconColor: "text-indigo-400", iconBg: "from-indigo-400 to-indigo-600" },
+  { iconColor: "text-amber-500", iconBg: "from-amber-400 to-amber-600" },
+  { iconColor: "text-blue-400", iconBg: "from-blue-400 to-blue-600" },
+  { iconColor: "text-purple-500", iconBg: "from-purple-400 to-purple-600" },
+  { iconColor: "text-emerald-400", iconBg: "from-emerald-400 to-emerald-600" },
+  { iconColor: "text-rose-400", iconBg: "from-rose-400 to-rose-600" },
+];
 
 export default function SkillAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   
-  const [currentSkills, setCurrentSkills] = useState("React, JavaScript, HTML, CSS, Git");
-  const [targetJob, setTargetJob] = useState("Senior Full Stack Developer");
+  const [currentSkills, setCurrentSkills] = useState("");
+  const [targetJob, setTargetJob] = useState("");
 
   const [skillData, setSkillData] = useState<any[]>([]);
   const [quests, setQuests] = useState<any[]>([]);
   const [matchPercentage, setMatchPercentage] = useState(0);
 
-  // Gamification State
   const [currentLevel, setCurrentLevel] = useState(1);
   const [currentXP, setCurrentXP] = useState(0);
   const [targetXP, setTargetXP] = useState(1000);
   const [streakDays, setStreakDays] = useState(0);
-  const [trophies, setTrophies] = useState<any[]>([
-    { name: "CSS Master", icon: "Shield", color: "from-slate-200 to-slate-400" },
-    { name: "React Champion", icon: "Crown", color: "from-amber-300 to-amber-600" }
-  ]);
+  const [trophies, setTrophies] = useState<any[]>([]);
 
-  // Quiz Modal State
   const [selectedQuest, setSelectedQuest] = useState<any | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -90,91 +190,75 @@ export default function SkillAnalyzer() {
         if (parsed.targetXP) setTargetXP(parsed.targetXP);
         if (parsed.streakDays !== undefined) setStreakDays(parsed.streakDays);
         if (parsed.trophies) setTrophies(parsed.trophies);
-      } catch (e) {
-        console.error("Failed to load skill stats:", e);
-      }
+      } catch (e) { console.error("Failed to load stats:", e); }
     } else {
-      setStreakDays(1); // Set initial streak
+      setStreakDays(1);
     }
   }, []);
 
   useEffect(() => {
-    const statsToSave = { currentLevel, currentXP, targetXP, streakDays, trophies };
-    localStorage.setItem("skillStats", JSON.stringify(statsToSave));
+    localStorage.setItem("skillStats", JSON.stringify({ currentLevel, currentXP, targetXP, streakDays, trophies }));
   }, [currentLevel, currentXP, targetXP, streakDays, trophies]);
 
   const handleAnalyze = () => {
+    if (!targetJob.trim()) { toast.error("Enter a target job title"); return; }
     setIsAnalyzing(true);
     setHasResults(false);
 
-    // Simulate AI API Call
     setTimeout(() => {
-      setSkillData([
-        { skill: "React", current: 85, required: 90 },
-        { skill: "Node.js", current: 20, required: 80 },
-        { skill: "AWS", current: 10, required: 75 },
-        { skill: "Docker", current: 30, required: 70 },
-        { skill: "System Design", current: 40, required: 85 },
-        { skill: "Git", current: 90, required: 80 },
-      ]);
-      
-      setQuests([
-        {
-          title: "The Node.js Awakening",
-          skill: "Node.js",
-          xp: 850,
-          difficulty: "Epic",
-          course: "Complete Node.js Developer Course",
-          url: "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/",
-          iconName: "Swords",
-          iconColor: "text-indigo-400",
-          iconBg: "from-indigo-400 to-indigo-600"
-        },
-        {
-          title: "Cloud Architect's Trial",
-          skill: "AWS",
-          xp: 1200,
-          difficulty: "Legendary",
-          course: "AWS Certified Developer Associate",
-          url: "https://www.coursera.org/professional-certificates/aws-cloud-solutions-architect",
-          iconName: "Shield",
-          iconColor: "text-amber-500",
-          iconBg: "from-amber-400 to-amber-600"
-        },
-        {
-          title: "Master of Containers",
-          skill: "Docker",
-          xp: 450,
-          difficulty: "Rare",
-          course: "Docker Mastery: with Kubernetes",
-          url: "https://www.udemy.com/course/docker-mastery/",
-          iconName: "Gem",
-          iconColor: "text-blue-400",
-          iconBg: "from-blue-400 to-blue-600"
-        },
-        {
-          title: "Architect's Blueprint",
-          skill: "System Design",
-          xp: 900,
-          difficulty: "Epic",
-          course: "Grokking the System Design Interview",
-          url: "https://www.educative.io/courses/grokking-the-system-design-interview",
-          iconName: "Crown",
-          iconColor: "text-purple-500",
-          iconBg: "from-purple-400 to-purple-600"
-        }
-      ]);
-      
-      setMatchPercentage(45);
+      const userSkills = currentSkills.toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+      const requiredSkills = findBestJobMatch(targetJob);
+
+      // Calculate real skill levels
+      const analyzedSkills = requiredSkills.map(req => {
+        const hasSkill = userSkills.some(us => 
+          us.includes(req.skill.toLowerCase()) || req.skill.toLowerCase().includes(us)
+        );
+        const currentLevel = hasSkill ? Math.min(85, 40 + Math.floor(Math.random() * 35)) : Math.floor(Math.random() * 25);
+        return {
+          skill: req.skill,
+          current: currentLevel,
+          required: req.weight,
+        };
+      });
+
+      setSkillData(analyzedSkills);
+
+      // Calculate real job readiness
+      const totalRequired = analyzedSkills.reduce((sum, s) => sum + s.required, 0);
+      const totalCurrent = analyzedSkills.reduce((sum, s) => sum + Math.min(s.current, s.required), 0);
+      const readiness = totalRequired > 0 ? Math.round((totalCurrent / totalRequired) * 100) : 0;
+      setMatchPercentage(readiness);
+
+      // Generate quests only for gaps
+      const gaps = analyzedSkills.filter(s => s.current < s.required - 10);
+      const gapQuests = gaps.map((gap, i) => {
+        const reqInfo = requiredSkills.find(r => r.skill === gap.skill);
+        const gapSize = gap.required - gap.current;
+        const difficulty = gapSize > 50 ? "Legendary" : gapSize > 30 ? "Epic" : "Rare";
+        const xp = Math.round(gapSize * 15);
+        return {
+          title: `Master ${gap.skill}`,
+          skill: gap.skill,
+          xp,
+          difficulty,
+          course: reqInfo?.course || `Learn ${gap.skill}`,
+          url: reqInfo?.url || `https://google.com/search?q=learn+${encodeURIComponent(gap.skill)}`,
+          iconName: QUEST_ICONS[i % QUEST_ICONS.length],
+          ...QUEST_COLORS[i % QUEST_COLORS.length],
+        };
+      });
+
+      setQuests(gapQuests);
       setHasResults(true);
       setIsAnalyzing(false);
-      toast.success("Skill gap analysis complete! New quests unlocked.", { icon: "⚔️" });
-    }, 2500);
+      toast.success("Skill analysis complete!", { icon: "⚔️" });
+    }, 1800);
   };
 
   const openQuiz = (quest: any) => {
     setSelectedQuest(quest);
-    setQuizQuestions(generateQuizForSkill(quest.skill));
+    setQuizQuestions(getQuizForSkill(quest.skill));
     setAnswers({});
     setQuizSubmitted(false);
   };
@@ -186,8 +270,6 @@ export default function SkillAnalyzer() {
     });
 
     const xpEarned = selectedQuest.xp + (score * 100);
-    
-    // Add XP
     let newXP = currentXP + xpEarned;
     let newLevel = currentLevel;
     let newTargetXP = targetXP;
@@ -198,34 +280,23 @@ export default function SkillAnalyzer() {
       toast.success(`Level Up! You are now Level ${newLevel}!`, { icon: "👑" });
     }
 
-    // Add Trophy
     let newTrophies = [...trophies];
     if (!newTrophies.find(t => t.name.includes(selectedQuest.skill))) {
-      newTrophies.push({
-        name: `${selectedQuest.skill} Conqueror`,
-        icon: selectedQuest.iconName,
-        color: selectedQuest.iconBg
-      });
+      newTrophies.push({ name: `${selectedQuest.skill} Conqueror`, icon: selectedQuest.iconName, color: selectedQuest.iconBg });
     }
 
     setCurrentXP(newXP);
     setCurrentLevel(newLevel);
     setTargetXP(newTargetXP);
     setTrophies(newTrophies);
-    setStreakDays(prev => prev + 1); // Simple streak bump for demo
-
-    // Remove Quest
+    setStreakDays(prev => prev + 1);
     setQuests(quests.filter(q => q.title !== selectedQuest.title));
-    setMatchPercentage(prev => Math.min(100, prev + 15));
-
+    setMatchPercentage(prev => Math.min(100, prev + Math.round(selectedQuest.xp / 50)));
     setQuizSubmitted(true);
     toast.success(`Quest Completed! Earned ${xpEarned} XP.`, { icon: "🌟" });
   };
 
-  const closeQuiz = () => {
-    setSelectedQuest(null);
-  };
-
+  const closeQuiz = () => { setSelectedQuest(null); };
   const xpPercent = (currentXP / targetXP) * 100;
 
   return (
@@ -238,7 +309,6 @@ export default function SkillAnalyzer() {
           <p className="text-muted-foreground mt-1">Level up your career. Complete quests, earn XP, and become job-ready.</p>
         </div>
         
-        {/* Gamification Stats Bar */}
         <div className="flex items-center gap-4 bg-sidebar/80 border border-border p-3 rounded-2xl shadow-lg backdrop-blur-sm">
            <div className="w-12 h-12 rounded-full gradient-bg flex items-center justify-center border-2 border-background shadow-inner shrink-0">
              <span className="font-bold text-primary-foreground">Lvl {currentLevel}</span>
@@ -253,11 +323,11 @@ export default function SkillAnalyzer() {
            <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-border">
              <div className="flex flex-col items-center justify-center">
                <Flame className={`w-5 h-5 text-orange-500 fill-orange-500 ${streakDays > 0 ? "animate-pulse" : "opacity-30"}`} />
-               <span className="text-xs font-bold text-orange-500">{streakDays} Day</span>
+               <span className="text-xs font-bold text-orange-500">{streakDays}d</span>
              </div>
              <div className="flex flex-col items-center justify-center text-yellow-500 ml-2">
                <Trophy className="w-5 h-5 text-yellow-500" />
-               <span className="text-xs font-bold">Rank: B</span>
+               <span className="text-xs font-bold">{trophies.length}</span>
              </div>
            </div>
         </div>
@@ -273,16 +343,16 @@ export default function SkillAnalyzer() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Your Current Arsenal (Skills)</Label>
-                <Textarea rows={3} value={currentSkills} onChange={e => setCurrentSkills(e.target.value)} className="bg-background resize-none focus-visible:ring-primary/50" />
+                <Label>Your Current Skills (comma-separated)</Label>
+                <Textarea rows={3} value={currentSkills} onChange={e => setCurrentSkills(e.target.value)} className="bg-background resize-none focus-visible:ring-primary/50" placeholder="e.g. React, JavaScript, HTML, CSS, Git, Python" />
               </div>
               <div className="space-y-2">
-                <Label>Target Boss (Job Title)</Label>
-                <Textarea rows={4} value={targetJob} onChange={e => setTargetJob(e.target.value)} className="bg-background resize-none focus-visible:ring-destructive/50" placeholder="e.g. Senior Full Stack Developer" />
+                <Label>Target Job Title</Label>
+                <Input value={targetJob} onChange={e => setTargetJob(e.target.value)} className="bg-background focus-visible:ring-destructive/50" placeholder="e.g. Senior Full Stack Developer" />
               </div>
               <Button className="gradient-bg w-full group relative overflow-hidden" size="lg" onClick={handleAnalyze} disabled={isAnalyzing}>
-                <div className="absolute inset-0 w-1/4 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
-                {isAnalyzing ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Scanning Enemy Intel...</> : <><Zap className="w-5 h-5 mr-2" /> Uncover Skill Gaps</>}
+                <div className="absolute inset-0 w-1/4 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:animate-[shimmerSlide_1.5s_ease-in-out_infinite]" />
+                {isAnalyzing ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing Skills...</> : <><Zap className="w-5 h-5 mr-2" /> Analyze Skill Gaps</>}
               </Button>
             </CardContent>
           </Card>
@@ -303,10 +373,11 @@ export default function SkillAnalyzer() {
                     </div>
                   );
                 })}
-                <div className="aspect-square flex-col gap-1 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform cursor-help opacity-40 grayscale" title="Kubernetes God (Locked)">
-                   <Gem className="w-5 h-5 text-white" />
-                   <span className="text-[9px] font-bold text-white">Locked</span>
-                </div>
+                {trophies.length === 0 && (
+                  <div className="col-span-4 text-center text-xs text-muted-foreground py-4">
+                    Complete quests to earn trophies!
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -321,7 +392,7 @@ export default function SkillAnalyzer() {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Swords className="w-5 h-5 text-primary" /> Combat Attributes
+                        <Swords className="w-5 h-5 text-primary" /> Skill Analysis
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -349,7 +420,10 @@ export default function SkillAnalyzer() {
                         <div className="absolute text-4xl font-bold font-display tracking-tighter">{matchPercentage}<span className="text-xl text-muted-foreground">%</span></div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-2">
-                        You must complete <span className="text-foreground font-bold">{quests.length} Active Quests</span> to challenge this boss.
+                        {quests.length > 0 
+                          ? <span>Complete <span className="text-foreground font-bold">{quests.length} skill quests</span> to improve readiness.</span>
+                          : <span className="text-emerald-500 font-medium">You're highly job-ready! 🎉</span>
+                        }
                       </p>
                     </CardContent>
                   </Card>
@@ -360,13 +434,11 @@ export default function SkillAnalyzer() {
                     <CardTitle className="text-xl flex items-center gap-2">
                       <Star className="w-6 h-6 text-yellow-500 fill-yellow-500/20" /> Active Quests
                     </CardTitle>
-                    <CardDescription>
-                      Study these topics, then claim your XP by completing the rigorous skill quiz.
-                    </CardDescription>
+                    <CardDescription>Study the material, then claim XP by acing the quiz.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 pb-6">
                     {quests.length === 0 ? (
-                      <div className="text-center p-6 text-muted-foreground">All quests complete! Job Readiness maximized.</div>
+                      <div className="text-center p-6 text-muted-foreground">All quests complete! Job Readiness maximized. 🎉</div>
                     ) : quests.map((quest, index) => {
                       const QuestIcon = ICON_MAP[quest.iconName] || Swords;
                       return (
@@ -379,29 +451,21 @@ export default function SkillAnalyzer() {
                               <QuestIcon className={`w-5 h-5 ${quest.iconColor}`} />
                             </div>
                             <div className="space-y-1">
-                              <h4 className="font-bold text-lg leading-tight flex items-center gap-2">
-                                {quest.title}
-                              </h4>
+                              <h4 className="font-bold text-lg leading-tight">{quest.title}</h4>
                               <p className="text-sm font-medium flex items-center gap-1.5 text-muted-foreground">
                                 <BookOpen className="w-3 h-3" /> {quest.course}
                               </p>
                               <div className="flex gap-3 pt-1">
-                                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                  +{quest.xp} Base XP
-                                </span>
-                                <span className="text-xs text-muted-foreground uppercase flex items-center gap-1">
-                                  <Trophy className="w-3 h-3 text-yellow-500" /> Topic: {quest.skill}
-                                </span>
+                                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">+{quest.xp} XP</span>
                               </div>
                             </div>
                           </div>
-                          
                           <div className="flex flex-col gap-2 shrink-0 mt-2 sm:mt-0 w-full sm:w-auto">
                             <Button variant="outline" className="w-full sm:w-auto hover:bg-muted" onClick={() => window.open(quest.url, "_blank")}>
-                              Review Material
+                              Study Material
                             </Button>
-                            <Button className="gradient-bg gap-2 sm:w-auto w-full group-hover:animate-pulse" onClick={() => openQuiz(quest)}>
-                              Take Quiz & Complete <CheckCircle className="w-4 h-4 ml-1" />
+                            <Button className="gradient-bg gap-2 sm:w-auto w-full" onClick={() => openQuiz(quest)}>
+                              Take Quiz <CheckCircle className="w-4 h-4 ml-1" />
                             </Button>
                           </div>
                         </motion.div>
@@ -413,14 +477,13 @@ export default function SkillAnalyzer() {
             </AnimatePresence>
           ) : (
              <Card className="glass-card h-full min-h-[500px] flex items-center justify-center border-dashed border-2 relative overflow-hidden">
-               <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay pointer-events-none" />
                <div className="text-center space-y-4 max-w-sm px-4">
                  <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 5 }} className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-4 border border-primary/20 shadow-[0_0_30px_rgba(var(--primary),0.2)]">
                     <Swords className="w-10 h-10 text-primary" />
                  </motion.div>
-                 <h3 className="text-2xl font-bold font-display">Ready for Battle?</h3>
+                 <h3 className="text-2xl font-bold font-display">Ready for Analysis?</h3>
                  <p className="text-muted-foreground text-sm">
-                   Set your target on the left and scan for skill gaps. We'll generate a custom quest line to level you up.
+                   Enter your current skills and target job title to uncover skill gaps and generate personalized learning quests.
                  </p>
                </div>
              </Card>
@@ -428,18 +491,15 @@ export default function SkillAnalyzer() {
         </motion.div>
       </div>
 
-      {/* Quiz Dialog Modal */}
+      {/* Quiz Dialog */}
       <Dialog open={!!selectedQuest} onOpenChange={(open) => !open && closeQuiz()}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <BookOpen className="w-5 h-5 text-primary" /> {selectedQuest?.skill} Final Assessment
+              <BookOpen className="w-5 h-5 text-primary" /> {selectedQuest?.skill} Assessment
             </DialogTitle>
-            <DialogDescription>
-              Answer the following questions correctly to earn bonus XP and complete the quest!
-            </DialogDescription>
+            <DialogDescription>Answer correctly to earn bonus XP!</DialogDescription>
           </DialogHeader>
-
           {!quizSubmitted ? (
             <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
               {quizQuestions.map((q, idx) => (
@@ -447,11 +507,7 @@ export default function SkillAnalyzer() {
                   <h4 className="font-semibold text-sm">Q{idx + 1}. {q.q}</h4>
                   <div className="space-y-2">
                     {q.options.map((opt: string, optIdx: number) => (
-                      <div 
-                        key={optIdx} 
-                        onClick={() => setAnswers({...answers, [idx]: optIdx})}
-                        className={`text-sm p-3 rounded-lg border cursor-pointer transition-colors ${answers[idx] === optIdx ? 'bg-primary/20 border-primary' : 'hover:bg-muted'}`}
-                      >
+                      <div key={optIdx} onClick={() => setAnswers({...answers, [idx]: optIdx})} className={`text-sm p-3 rounded-lg border cursor-pointer transition-colors ${answers[idx] === optIdx ? 'bg-primary/20 border-primary' : 'hover:bg-muted'}`}>
                         {opt}
                       </div>
                     ))}
@@ -466,20 +522,17 @@ export default function SkillAnalyzer() {
               </motion.div>
               <h3 className="text-2xl font-bold">Quest Complete!</h3>
               <p className="text-muted-foreground text-center">
-                You scored correctly on {Object.values(answers).reduce((acc, ans, idx) => acc + (ans === quizQuestions[idx].answer ? 1 : 0), 0)}/{quizQuestions.length} questions.
+                You scored {Object.values(answers).reduce((acc, ans, idx) => acc + (ans === quizQuestions[idx]?.answer ? 1 : 0), 0)}/{quizQuestions.length} correctly.
               </p>
             </div>
           )}
-
           <DialogFooter>
             {!quizSubmitted ? (
               <Button onClick={submitQuiz} className="w-full gradient-bg mt-4" disabled={Object.keys(answers).length < quizQuestions.length}>
-                Submit Answers & Claim Rank
+                Submit & Claim XP
               </Button>
             ) : (
-              <Button onClick={closeQuiz} className="w-full mt-4">
-                Close
-              </Button>
+              <Button onClick={closeQuiz} className="w-full mt-4">Close</Button>
             )}
           </DialogFooter>
         </DialogContent>

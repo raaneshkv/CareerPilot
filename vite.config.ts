@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    historyApiFallback: true,
+  },
+  preview: {
+    port: 8080,
   },
   plugins: [react()],
   resolve: {

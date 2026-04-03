@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Upload, FileText, Sparkles, Loader2, Rocket, Mic, Flame, Map } from "lucide-react";
+import { Upload, FileText, Sparkles, Loader2, Rocket, Mic, Flame, Map, GripVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -17,10 +17,8 @@ import type { RoadmapNodeData } from "@/components/RoadmapNode";
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
-// Ensure pdfjs worker is set
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
-// Helper to extract text from files before sending to ChatGPT
 const extractTextFromFile = async (file: File): Promise<string> => {
   try {
     const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === "application/pdf";
@@ -56,26 +54,27 @@ const Roadmap = () => {
   const [activeRoadmapId, setActiveRoadmapId] = useState<string | null>(null);
   const [isCriticMode, setIsCriticMode] = useState(false);
   const [targetRoleInput, setTargetRoleInput] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Capture dropped file or ID from query params
   useEffect(() => {
-    // Handle query params
     const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('id');
 
     if (id && id !== activeRoadmapId) {
       setActiveRoadmapId(id);
-      // Clean up URL without triggering re-render
       window.history.replaceState({}, document.title, location.pathname);
-    }
-    // Handle dropped file
-    else if (location.state?.droppedFile && !file && !activeRoadmapId) {
+    } else if (location.state?.droppedFile && !file && !activeRoadmapId) {
       setFile(location.state.droppedFile);
       window.history.replaceState({}, document.title);
     }
-  }, [location.search, location.state?.droppedFile, file, activeRoadmapId]);
+    // Handle pre-filled target from Career Discovery "Create Roadmap" button
+    if (location.state?.targetRole && !targetRoleInput) {
+      setTargetRoleInput(location.state.targetRole);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.search, location.state?.droppedFile, location.state?.targetRole, file, activeRoadmapId]);
 
   const { data: roadmaps, refetch } = useQuery({
     queryKey: ["roadmaps", user?.id],
@@ -84,7 +83,7 @@ const Roadmap = () => {
         .from("roadmaps")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       return data;
     },
@@ -93,18 +92,20 @@ const Roadmap = () => {
 
   const activeRoadmap = roadmaps?.find((r: any) => r.id === activeRoadmapId);
 
+  const isValidFile = (f: File) => {
+    const isPdf = f.name.toLowerCase().endsWith('.pdf');
+    const isDocx = f.name.toLowerCase().endsWith('.docx');
+    const validTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    return validTypes.includes(f.type) || isPdf || isDocx;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      const isPdf = selected.name.toLowerCase().endsWith('.pdf');
-      const isDocx = selected.name.toLowerCase().endsWith('.docx');
-      
-      const validTypes = [
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-      // Check both type and extension just in case OS doesn't provide type
-      if (!validTypes.includes(selected.type) && !isPdf && !isDocx) {
+      if (!isValidFile(selected)) {
         toast.error("Please upload a PDF or DOCX file");
         if (e.target) e.target.value = '';
         return;
@@ -112,16 +113,44 @@ const Roadmap = () => {
       setFile(selected);
       setActiveRoadmapId(null);
     }
-    // Reset file input so the same file can be selected again if needed
     if (e.target) e.target.value = '';
   };
+
+  /* Drag & Drop Handlers */
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      if (!isValidFile(droppedFile)) {
+        toast.error("Please upload a PDF or DOCX file");
+        return;
+      }
+      setFile(droppedFile);
+      setActiveRoadmapId(null);
+      toast.success(`File "${droppedFile.name}" loaded!`);
+    }
+  }, []);
 
   const handleGenerate = async () => {
     if (!file || !user) return;
     setGenerating(true);
 
     try {
-      // Sanitize filename to avoid supabase storage issues with special chars
       const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
       const filePath = `${user.id}/${Date.now()}_${safeName}`;
       
@@ -131,15 +160,23 @@ const Roadmap = () => {
       if (uploadError) throw uploadError;
 
       const text = await extractTextFromFile(file);
+      if (!text || text.trim().length < 50) {
+        toast.error("Could not extract enough text from the file. Please try a different file format.");
+        setGenerating(false);
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke("analyze-resume", {
         body: { resumeText: text, fileName: file.name },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       let roadmapData = data.roadmap;
+      if (!roadmapData || (!roadmapData.nodes && !roadmapData.skills_to_learn)) {
+        throw new Error("AI returned invalid roadmap data. Please try again.");
+      }
 
-      // Roast mode enhancement
       if (isCriticMode) {
         roadmapData.summary = "🔥 ROAST MODE: " + (roadmapData.summary || "") +
           "\nHonestly, this resume has a lot of fluff and lacks hard impact metrics. You're getting filtered out by ATS systems because you sound like everyone else. We need to upgrade these skills aggressively.";
@@ -199,8 +236,12 @@ const Roadmap = () => {
         body: { roadmapTarget: targetRoleInput },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       let roadmapData = data.roadmap;
+      if (!roadmapData || (!roadmapData.nodes && !roadmapData.skills_to_learn)) {
+        throw new Error("AI returned invalid data. Please try again.");
+      }
 
       if (isCriticMode) {
         roadmapData.summary = "🔥 ROAST MODE: " + (roadmapData.summary || "") +
@@ -257,7 +298,17 @@ const Roadmap = () => {
         </h2>
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-xl p-10 text-center cursor-pointer hover:border-primary/50 transition-colors"
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-300 ${
+            isDragOver 
+              ? 'border-primary bg-primary/5 scale-[1.02]' 
+              : file 
+                ? 'border-primary/50 bg-primary/5' 
+                : 'border-border hover:border-primary/50'
+          }`}
         >
           <input
             ref={fileInputRef}
@@ -274,10 +325,21 @@ const Roadmap = () => {
                 <p className="text-sm text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
               </div>
             </div>
+          ) : isDragOver ? (
+            <motion.div 
+              initial={{ scale: 0.95 }} 
+              animate={{ scale: 1 }}
+              className="text-primary"
+            >
+              <Upload className="w-12 h-12 mx-auto mb-3 animate-bounce" />
+              <p className="font-bold text-lg">Drop your file here!</p>
+            </motion.div>
           ) : (
             <div>
-              <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="font-medium">Click to upload your resume</p>
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <GripVertical className="w-6 h-6 text-primary/60" />
+              </div>
+              <p className="font-medium">Drag & drop your resume here or click to browse</p>
               <p className="text-sm text-muted-foreground mt-1">PDF or DOCX (max 10MB)</p>
             </div>
           )}
@@ -319,7 +381,7 @@ const Roadmap = () => {
             <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground font-semibold">Or Generative from Scratch</span>
+            <span className="bg-background px-2 text-muted-foreground font-semibold">Or Generate from Scratch</span>
           </div>
         </div>
 
@@ -368,14 +430,22 @@ const Roadmap = () => {
 
       {/* Active Roadmap */}
       {activeRoadmap && (
-        (activeRoadmap.roadmap_data as any)?.nodes ? (
-          <PersonalizedRoadmap
-            roadmap={activeRoadmap.roadmap_data as any}
-            onUpdateNodes={(nodes) => handleUpdateNodes(activeRoadmap.id, nodes)}
-          />
-        ) : (
-          <RoadmapDisplay roadmap={activeRoadmap.roadmap_data as any} />
-        )
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold font-display">Current Roadmap</h2>
+            <Button variant="ghost" size="sm" onClick={() => setActiveRoadmapId(null)}>
+              ← Back to list
+            </Button>
+          </div>
+          {(activeRoadmap.roadmap_data as any)?.nodes ? (
+            <PersonalizedRoadmap
+              roadmap={activeRoadmap.roadmap_data as any}
+              onUpdateNodes={(nodes) => handleUpdateNodes(activeRoadmap.id, nodes)}
+            />
+          ) : (
+            <RoadmapDisplay roadmap={activeRoadmap.roadmap_data as any} />
+          )}
+        </div>
       )}
 
       {/* Empty State */}
@@ -393,7 +463,7 @@ const Roadmap = () => {
         </motion.div>
       )}
 
-      {/* Recent Roadmaps */}
+      {/* Recent Roadmaps — always visible list */}
       {roadmaps && roadmaps.length > 0 && !activeRoadmap && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -409,13 +479,16 @@ const Roadmap = () => {
               const pct = nodes.length > 0 ? Math.round((done / nodes.length) * 100) : 0;
 
               return (
-                <div
+                <motion.div
                   key={rm.id}
+                  whileHover={{ scale: 1.01 }}
                   onClick={() => setActiveRoadmapId(rm.id)}
                   className="glass-card p-4 cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-primary" />
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
                     <div>
                       <p className="font-medium text-sm">{rm.resume_file_name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -423,11 +496,30 @@ const Roadmap = () => {
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">View</Button>
-                </div>
+                  <Button variant="ghost" size="sm">View →</Button>
+                </motion.div>
               );
             })}
           </div>
+        </motion.div>
+      )}
+
+      {/* Loading overlay */}
+      {generating && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="glass-card p-12 text-center"
+        >
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-t-2 border-primary animate-spin" />
+            <div className="absolute inset-2 rounded-full border-r-2 border-secondary animate-spin" style={{ animationDirection: 'reverse' }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold font-display">AI is analyzing your profile...</h3>
+          <p className="text-sm text-muted-foreground mt-2">This may take 15-30 seconds. We're building your personalized career roadmap.</p>
         </motion.div>
       )}
     </div>

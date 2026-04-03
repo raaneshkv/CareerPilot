@@ -1,371 +1,348 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Calculator, Briefcase, IndianRupee, Target, TrendingUp, AlertTriangle, CheckCircle2, AlertCircle, TrendingDown, Sparkles, RefreshCcw } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, Legend, PieChart, Pie, Cell,
+} from "recharts";
+import { Calculator, Sparkles, Loader2, TrendingUp, IndianRupee, Clock, AlertCircle, CheckCircle, Shield, Wallet } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/useAuth";
 
-const Finance = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
-  
-  // Inputs
-  const [currentIncome, setCurrentIncome] = useState("60000");
+/* ===== Indian Tech Salary Database (₹ LPA by role and experience) ===== */
+const SALARY_DB: Record<string, { fresher: number; mid: number; senior: number; lead: number }> = {
+  "frontend developer": { fresher: 500000, mid: 1200000, senior: 2000000, lead: 3000000 },
+  "backend developer": { fresher: 550000, mid: 1400000, senior: 2200000, lead: 3200000 },
+  "full stack developer": { fresher: 600000, mid: 1500000, senior: 2400000, lead: 3500000 },
+  "data scientist": { fresher: 700000, mid: 1800000, senior: 3000000, lead: 4500000 },
+  "data analyst": { fresher: 400000, mid: 900000, senior: 1500000, lead: 2200000 },
+  "machine learning engineer": { fresher: 800000, mid: 2000000, senior: 3500000, lead: 5000000 },
+  "devops engineer": { fresher: 600000, mid: 1500000, senior: 2500000, lead: 3800000 },
+  "cloud architect": { fresher: 900000, mid: 2200000, senior: 4000000, lead: 5500000 },
+  "product manager": { fresher: 800000, mid: 1800000, senior: 3000000, lead: 4500000 },
+  "ux designer": { fresher: 450000, mid: 1100000, senior: 1800000, lead: 2800000 },
+  "ui designer": { fresher: 400000, mid: 1000000, senior: 1600000, lead: 2500000 },
+  "mobile developer": { fresher: 500000, mid: 1400000, senior: 2200000, lead: 3000000 },
+  "cybersecurity analyst": { fresher: 600000, mid: 1500000, senior: 2500000, lead: 4000000 },
+  "blockchain developer": { fresher: 700000, mid: 1800000, senior: 3000000, lead: 4500000 },
+  "qa engineer": { fresher: 400000, mid: 900000, senior: 1500000, lead: 2200000 },
+  "technical writer": { fresher: 350000, mid: 800000, senior: 1300000, lead: 1800000 },
+  "solutions architect": { fresher: 1000000, mid: 2500000, senior: 4500000, lead: 6000000 },
+  "site reliability engineer": { fresher: 700000, mid: 1800000, senior: 3000000, lead: 4200000 },
+  "ai engineer": { fresher: 900000, mid: 2200000, senior: 4000000, lead: 5500000 },
+};
+
+/* ===== Upskilling cost estimates ===== */
+const TRANSITION_COSTS: Record<string, { courses: number; certs: number; bootcamp: number; months: number }> = {
+  "frontend developer": { courses: 15000, certs: 10000, bootcamp: 50000, months: 4 },
+  "backend developer": { courses: 18000, certs: 12000, bootcamp: 55000, months: 5 },
+  "full stack developer": { courses: 25000, certs: 15000, bootcamp: 80000, months: 6 },
+  "data scientist": { courses: 30000, certs: 25000, bootcamp: 100000, months: 8 },
+  "machine learning engineer": { courses: 35000, certs: 30000, bootcamp: 120000, months: 10 },
+  "devops engineer": { courses: 20000, certs: 30000, bootcamp: 70000, months: 6 },
+  "cloud architect": { courses: 25000, certs: 40000, bootcamp: 90000, months: 8 },
+  "product manager": { courses: 20000, certs: 15000, bootcamp: 60000, months: 4 },
+  "cybersecurity analyst": { courses: 25000, certs: 35000, bootcamp: 80000, months: 7 },
+};
+
+function findSalary(role: string): { fresher: number; mid: number; senior: number; lead: number } {
+  const lower = role.toLowerCase();
+  for (const [key, data] of Object.entries(SALARY_DB)) {
+    if (lower.includes(key) || key.includes(lower.replace('senior ', '').replace('junior ', '').replace('lead ', ''))) {
+      return data;
+    }
+  }
+  // Partial match
+  for (const [key, data] of Object.entries(SALARY_DB)) {
+    const keyWords = key.split(' ');
+    if (keyWords.some(w => lower.includes(w))) return data;
+  }
+  return { fresher: 500000, mid: 1200000, senior: 2000000, lead: 3000000 };
+}
+
+function findTransitionCost(role: string) {
+  const lower = role.toLowerCase();
+  for (const [key, data] of Object.entries(TRANSITION_COSTS)) {
+    if (lower.includes(key) || key.includes(lower.replace('senior ', '').replace('junior ', '').replace('lead ', ''))) {
+      return data;
+    }
+  }
+  return { courses: 20000, certs: 15000, bootcamp: 60000, months: 6 };
+}
+
+function formatINR(num: number) {
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)} Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(1)} L`;
+  if (num >= 1000) return `₹${(num / 1000).toFixed(0)}K`;
+  return `₹${num.toLocaleString('en-IN')}`;
+}
+
+export default function Finance() {
+  const [currentSalary, setCurrentSalary] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [interests, setInterests] = useState("");
-  const [transitionCost, setTransitionCost] = useState("15000");
-  
-  // Outputs
+  const [experience, setExperience] = useState("fresher");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
 
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
+  const handleAnalyze = () => {
+    if (!currentSalary || !targetRole) return;
+    setIsAnalyzing(true);
+    setResult(null);
 
-  const handleAnalyze = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setAnalyzed(false);
-
-    // AI Simulation Delay
     setTimeout(() => {
-      const incomeStr = parseInt(currentIncome.replace(/[^0-9]/g, "")) || 0;
-      const costStr = parseInt(transitionCost.replace(/[^0-9]/g, "")) || 0;
-      const role = targetRole.toLowerCase();
+      const current = parseInt(currentSalary) * 100000 || 500000; // Convert LPA input to actual
+      const targetSalaryDB = findSalary(targetRole);
+      const expKey = experience as keyof typeof targetSalaryDB;
+      const projectedSalary = targetSalaryDB[expKey] || targetSalaryDB.mid;
+      const transitionInfo = findTransitionCost(targetRole);
       
-      let baseMultiplier = 1.1;
-      let flatBump = 10000;
-      let riskLevel = "NOT ADVISED";
-      let score = 55;
-      let breakEven = 3.5;
-      let affordability = 40;
-
-      if (role.includes("engineer") || role.includes("developer") || role.includes("data") || role.includes("ai")) {
-        baseMultiplier = 1.6;
-        flatBump = 35000;
-        riskLevel = "GO";
-        score = 94;
-        breakEven = 0.8;
-        affordability = 85;
-      } else if (role.includes("manager") || role.includes("director") || role.includes("lead")) {
-        baseMultiplier = 1.35;
-        flatBump = 20000;
-        riskLevel = "RISKY";
-        score = 76;
-        breakEven = 1.8;
-        affordability = 60;
-      } else if (role.length > 3) {
-        baseMultiplier = 1.2;
-        flatBump = 15000;
-        riskLevel = "STEADY";
-        score = 82;
-        breakEven = 2.1;
-        affordability = 70;
+      const totalTransitionCost = transitionInfo.courses + transitionInfo.certs + transitionInfo.bootcamp;
+      const monthlyCurrentIncome = current / 12;
+      const monthlyTargetIncome = projectedSalary / 12;
+      const monthlyDiff = monthlyTargetIncome - monthlyCurrentIncome;
+      
+      // ROI = (5 year earnings gain - transition cost) / transition cost * 100
+      const fiveYearGain = (projectedSalary - current) * 5;
+      const roi = totalTransitionCost > 0 ? Math.round(((fiveYearGain - totalTransitionCost) / totalTransitionCost) * 100) : 0;
+      
+      // Break-even in months
+      const breakEvenMonths = monthlyDiff > 0 ? Math.ceil(totalTransitionCost / monthlyDiff) : 999;
+      
+      // Monthly savings (50/30/20 rule: 20% savings)
+      const monthlySavingsTarget = monthlyTargetIncome * 0.20;
+      const monthlySavingsCurrent = monthlyCurrentIncome * 0.20;
+      
+      // Risk assessment
+      let riskScore = 50;
+      if (projectedSalary > current * 2) riskScore += 15; // High salary jump = more risk
+      if (transitionInfo.months > 6) riskScore += 10;
+      if (targetRole.toLowerCase().includes('ai') || targetRole.toLowerCase().includes('ml') || targetRole.toLowerCase().includes('cloud')) riskScore -= 15; // Hot market
+      if (experience === 'fresher') riskScore += 5;
+      riskScore = Math.max(10, Math.min(90, riskScore));
+      
+      // Salary progression over 5 years
+      const salaryProjection = [];
+      for (let yr = 0; yr <= 5; yr++) {
+        const currentGrowth = current * Math.pow(1.08, yr); // 8% annual growth in current role
+        const targetGrowth = yr === 0 ? current : projectedSalary * Math.pow(1.12, yr - 1); // 12% in new role after year 1
+        salaryProjection.push({
+          year: `Year ${yr}`,
+          "Current Path": Math.round(currentGrowth),
+          "New Path": Math.round(targetGrowth),
+        });
       }
-
-      const predictedIncome = Math.round((incomeStr * baseMultiplier) + flatBump);
-      const monthlyAffordability = Math.round((incomeStr / 12) * (affordability / 100));
-
-      // Generate projection data
-      const chartData = Array.from({ length: 6 }).map((_, i) => ({
-        year: `Year ${i}`,
-        currentStatus: Math.round(incomeStr * Math.pow(1.03, i)),
-        targetStatus: i === 0 ? incomeStr : Math.round(predictedIncome * Math.pow(1.05, i - 1) - (i === 1 ? costStr : 0)),
-      }));
-
+      
+      // Cost breakdown
+      const costBreakdown = [
+        { name: "Online Courses", value: transitionInfo.courses, color: "#8b5cf6" },
+        { name: "Certifications", value: transitionInfo.certs, color: "#ec4899" },
+        { name: "Bootcamp/Training", value: transitionInfo.bootcamp, color: "#06b6d4" },
+        { name: `Living (${transitionInfo.months} mo)`, value: transitionInfo.months * monthlyCurrentIncome * 0.3, color: "#f59e0b" },
+      ];
+      
       setResult({
-        score,
-        riskLevel,
-        predictedIncome,
-        breakEven,
-        monthlyAffordability,
-        affordabilityPercentage: affordability,
-        chartData
+        projectedSalary,
+        totalTransitionCost,
+        roi,
+        breakEvenMonths,
+        riskScore,
+        monthlySavingsTarget,
+        monthlySavingsCurrent,
+        salaryProjection,
+        costBreakdown,
+        transitionMonths: transitionInfo.months,
+        fiveYearGain,
+        monthlyEMI: Math.round(totalTransitionCost / 12), // If financed
       });
-
-      setLoading(false);
-      setAnalyzed(true);
-    }, 2500);
+      
+      setIsAnalyzing(false);
+    }, 2000);
   };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "GO": return "text-emerald-400 border-emerald-400/20 bg-emerald-400/10";
-      case "STEADY": return "text-blue-400 border-blue-400/20 bg-blue-400/10";
-      case "RISKY": return "text-amber-400 border-amber-400/20 bg-amber-400/10";
-      default: return "text-rose-400 border-rose-400/20 bg-rose-400/10";
-    }
-  };
-
-  const getRiskIcon = (risk: string) => {
-    switch (risk) {
-      case "GO": return <CheckCircle2 className="w-6 h-6 text-emerald-400" />;
-      case "STEADY": return <TrendingUp className="w-6 h-6 text-blue-400" />;
-      case "RISKY": return <AlertTriangle className="w-6 h-6 text-amber-400" />;
-      default: return <AlertCircle className="w-6 h-6 text-rose-400" />;
-    }
-  };
+  const riskColor = (v: number) => v >= 70 ? "text-rose-500" : v >= 40 ? "text-amber-500" : "text-emerald-500";
+  const riskLabel = (v: number) => v >= 70 ? "High Risk" : v >= 40 ? "Moderate Risk" : "Low Risk";
 
   return (
-    <div className="relative w-full h-full pb-20">
-      <div className="flex flex-col mb-8 mt-2">
-        <h1 className="text-4xl font-black font-display tracking-tight text-white mb-2 flex items-center gap-3">
-          <Calculator className="w-10 h-10 text-primary" />
-          Financial Decision <span className="gradient-text bg-300% animate-[shine_6s_linear_infinite]">Engine</span>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <h1 className="text-3xl font-bold font-display">
+          Financial <span className="gradient-text">Decision Engine</span>
         </h1>
-        <p className="text-white/50 text-lg max-w-2xl">
-          Quantify the ROI of your next career move. Input your transition parameters to forecast constraints, calculate break-even timelines, and receive an AI-driven risk assessment.
-        </p>
-      </div>
+        <p className="text-muted-foreground mt-1">Calculate the true financial impact of your next career move in ₹.</p>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Input Form */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="lg:col-span-1 space-y-6"
-        >
-          <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/5 shadow-[0_0_80px_rgba(139,92,246,0.1)] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
-            
-            <form onSubmit={handleAnalyze} className="space-y-6 relative z-10">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="income" className="text-white/70 flex items-center gap-2">
-                    <IndianRupee className="w-4 h-4 text-primary" /> Current Annual Net Income
-                  </Label>
-                  <Input
-                    id="income"
-                    type="number"
-                    placeholder="60000"
-                    value={currentIncome}
-                    onChange={(e) => setCurrentIncome(e.target.value)}
-                    required
-                    className="bg-black/50 border-white/10 focus-visible:ring-primary text-white h-12 rounded-xl text-lg font-mono"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="targetRole" className="text-white/70 flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-primary" /> Target Role
-                  </Label>
-                  <Input
-                    id="targetRole"
-                    placeholder="e.g. Senior Machine Learning Engineer"
-                    value={targetRole}
-                    onChange={(e) => setTargetRole(e.target.value)}
-                    required
-                    className="bg-black/50 border-white/10 focus-visible:ring-primary text-white h-12 rounded-xl"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="interests" className="text-white/70 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-primary" /> Core Interests / Skills
-                  </Label>
-                  <Input
-                    id="interests"
-                    placeholder="e.g. Python, AI, Problem Solving"
-                    value={interests}
-                    onChange={(e) => setInterests(e.target.value)}
-                    className="bg-black/50 border-white/10 focus-visible:ring-primary text-white h-12 rounded-xl"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cost" className="text-white/70 flex items-center gap-2">
-                    <RefreshCcw className="w-4 h-4 text-primary" /> Estimated Transition Cost (₹)
-                  </Label>
-                  <Input
-                    id="cost"
-                    type="number"
-                    placeholder="15000"
-                    value={transitionCost}
-                    onChange={(e) => setTransitionCost(e.target.value)}
-                    required
-                    className="bg-black/50 border-white/10 focus-visible:ring-primary text-white h-12 rounded-xl text-lg font-mono"
-                  />
-                  <p className="text-xs text-white/40">Includes bootcamps, courses, relocation, etc.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Input Panel */}
+        <motion.div className="lg:col-span-4 space-y-6" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          <Card className="glass-card border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-primary" /> Financial Parameters
+              </CardTitle>
+              <CardDescription>Enter your current situation and target career</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Current Annual Salary (in LPA)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
+                  <Input type="number" value={currentSalary} onChange={e => setCurrentSalary(e.target.value)} className="bg-background pl-8" placeholder="e.g. 5 (for 5 LPA)" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">LPA</span>
                 </div>
               </div>
-
-              <Button 
-                type="submit" 
-                disabled={loading}
-                className="w-full h-14 rounded-xl gradient-bg text-white font-bold text-sm sm:text-base md:text-lg shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all uppercase tracking-wide relative overflow-hidden group"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 animate-spin" />
-                    Analyzing Data...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    Execute Matrix Simulation
-                  </span>
-                )}
-                {/* Button shine effect */}
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+              <div className="space-y-2">
+                <Label>Target Career Role</Label>
+                <Input value={targetRole} onChange={e => setTargetRole(e.target.value)} className="bg-background" placeholder="e.g. Machine Learning Engineer" />
+              </div>
+              <div className="space-y-2">
+                <Label>Target Experience Level</Label>
+                <Select value={experience} onValueChange={setExperience}>
+                  <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fresher">Fresher (0-1 yr)</SelectItem>
+                    <SelectItem value="mid">Mid-Level (2-5 yrs)</SelectItem>
+                    <SelectItem value="senior">Senior (5-10 yrs)</SelectItem>
+                    <SelectItem value="lead">Lead/Principal (10+ yrs)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="gradient-bg w-full" size="lg" onClick={handleAnalyze} disabled={isAnalyzing || !currentSalary || !targetRole}>
+                {isAnalyzing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Calculating ROI...</> : <><Sparkles className="w-4 h-4 mr-2" /> Analyze Financial Impact</>}
               </Button>
-            </form>
-          </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        {/* Right Column - Results Dashboard */}
-        <div className="lg:col-span-2 relative min-h-[500px]">
-          {loading && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center glass-card rounded-3xl z-20 border border-white/5"
-            >
-              <div className="relative w-32 h-32 mb-8">
-                <div className="absolute inset-0 rounded-full border-t-2 border-primary animate-spin" />
-                <div className="absolute inset-2 rounded-full border-r-2 border-secondary animate-spin reverse" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+        {/* Results */}
+        <motion.div className="lg:col-span-8 space-y-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+          <AnimatePresence mode="wait">
+            {!result ? (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-card h-full min-h-[400px] flex items-center justify-center border-dashed border-2">
+                <div className="text-center space-y-4 max-w-sm px-4">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <IndianRupee className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold font-display">Awaiting Analysis</h3>
+                  <p className="text-muted-foreground text-sm">Enter your current salary and target role to see a complete financial projection.</p>
                 </div>
-              </div>
-              <p className="text-xl font-display font-medium text-white/80 animate-pulse">Computing Risk Vectors...</p>
-              <p className="text-sm text-white/40 mt-2 font-mono">Assessing ROI against market trends</p>
-            </motion.div>
-          )}
+              </motion.div>
+            ) : (
+              <motion.div key="results" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="glass-card bg-emerald-500/5 border-emerald-500/20">
+                    <CardContent className="p-4 text-center">
+                      <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Projected Salary</p>
+                      <p className="text-xl font-bold text-emerald-500 font-display">{formatINR(result.projectedSalary)}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="glass-card bg-blue-500/5 border-blue-500/20">
+                    <CardContent className="p-4 text-center">
+                      <IndianRupee className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">5-Year ROI</p>
+                      <p className="text-xl font-bold text-blue-500 font-display">{result.roi}%</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="glass-card bg-amber-500/5 border-amber-500/20">
+                    <CardContent className="p-4 text-center">
+                      <Clock className="w-5 h-5 text-amber-500 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Break-Even</p>
+                      <p className="text-xl font-bold text-amber-500 font-display">{result.breakEvenMonths} mo</p>
+                    </CardContent>
+                  </Card>
+                  <Card className={`glass-card ${result.riskScore < 40 ? 'bg-emerald-500/5 border-emerald-500/20' : result.riskScore < 70 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}>
+                    <CardContent className="p-4 text-center">
+                      <Shield className={`w-5 h-5 ${riskColor(result.riskScore)} mx-auto mb-1`} />
+                      <p className="text-xs text-muted-foreground">Risk Level</p>
+                      <p className={`text-xl font-bold font-display ${riskColor(result.riskScore)}`}>{riskLabel(result.riskScore)}</p>
+                    </CardContent>
+                  </Card>
+                </div>
 
-          {!analyzed && !loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-3xl bg-white/[0.01]">
-              <TrendingDown className="w-16 h-16 text-white/20 mb-4" />
-              <p className="text-white/40 text-lg font-medium">Awaiting Matrix Parameters</p>
-              <p className="text-white/30 text-sm mt-2 max-w-sm text-center">Execute the simulation to generate a customized financial forecast and risk assessment.</p>
-            </div>
-          )}
-
-          {analyzed && !loading && result && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              {/* Top Row Results */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* Career Score */}
-                <div className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_0_50px_rgba(139,92,246,0.15)]">
-                  <p className="text-white/50 text-sm font-semibold uppercase tracking-wider mb-4">AI Matrix Score</p>
-                  
-                  {/* Custom SVG Score Gauge */}
-                  <div className="relative w-36 h-36">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="72" cy="72" r="60" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/5" />
-                      <motion.circle 
-                        initial={{ strokeDashoffset: 377 }}
-                        animate={{ strokeDashoffset: 377 - (377 * result.score) / 100 }}
-                        transition={{ duration: 2, ease: "easeOut" }}
-                        cx="72" cy="72" r="60" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="377" 
-                        className={`text-${result.score > 80 ? 'emerald' : result.score > 60 ? 'amber' : 'rose'}-400 drop-shadow-[0_0_10px_rgba(var(--color-${result.score > 80 ? 'emerald' : result.score > 60 ? 'amber' : 'rose'}-400),0.8))]`} 
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-4xl font-black font-display text-white">{result.score}</span>
-                      <span className="text-xs text-white/50">/100</span>
+                {/* Salary Comparison Chart */}
+                <Card className="glass-card border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg">5-Year Salary Trajectory</CardTitle>
+                    <CardDescription>Current path vs new career path</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[260px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={result.salaryProjection} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                          <XAxis dataKey="year" tick={{ fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatINR(v)} />
+                          <Tooltip formatter={(v: number) => formatINR(v)} contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }} />
+                          <Legend />
+                          <Line type="monotone" dataKey="Current Path" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                          <Line type="monotone" dataKey="New Path" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
-                {/* Risk Level */}
-                <div className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col items-center justify-center text-center col-span-1 md:col-span-2">
-                  <p className="text-white/50 text-sm font-semibold uppercase tracking-wider mb-2">Algorithm Assessment</p>
-                  <div className={`mt-2 flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border ${getRiskColor(result.riskLevel)}`}>
-                    {getRiskIcon(result.riskLevel)}
-                    <span className="text-3xl font-black font-display tracking-wide">{result.riskLevel}</span>
-                  </div>
-                  <div className="mt-6 w-full grid grid-cols-2 gap-4">
-                     <div className="bg-black/30 p-4 rounded-2xl flex flex-col items-center">
-                       <span className="text-white/40 text-xs mb-1">Time to Break Even</span>
-                       <span className="text-2xl font-bold font-mono text-white">{result.breakEven} <span className="text-sm text-white/50">Yrs</span></span>
-                     </div>
-                     <div className="bg-black/30 p-4 rounded-2xl flex flex-col items-center">
-                       <span className="text-white/40 text-xs mb-1">Predicted Base</span>
-                       <span className="text-2xl font-bold font-mono text-emerald-400">₹{result.predictedIncome.toLocaleString()}</span>
-                     </div>
-                  </div>
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Transition Cost Breakdown */}
+                  <Card className="glass-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2"><Wallet className="w-5 h-5 text-primary" /> Transition Investment</CardTitle>
+                      <CardDescription>Total: {formatINR(result.totalTransitionCost)} over {result.transitionMonths} months</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {result.costBreakdown.map((item: any, i: number) => (
+                          <div key={i}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-muted-foreground">{item.name}</span>
+                              <span className="font-medium">{formatINR(item.value)}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${(item.value / result.costBreakdown.reduce((s: number, c: any) => s + c.value, 0)) * 100}%`, backgroundColor: item.color }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Chart Section */}
-              <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/5">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-display font-medium text-white">5-Year Financial Projection</h3>
-                  <div className="flex gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-white/20" />
-                      <span className="text-xs text-white/50">Current Trajectory</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary" />
-                      <span className="text-xs text-white/50">Simulated Path</span>
-                    </div>
-                  </div>
+                  {/* Financial Summary */}
+                  <Card className="glass-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-500" /> Financial Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-sm text-muted-foreground">Monthly Salary (New)</span>
+                        <span className="font-bold text-emerald-500">{formatINR(Math.round(result.projectedSalary / 12))}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-sm text-muted-foreground">Monthly Savings (50/30/20)</span>
+                        <span className="font-bold">{formatINR(Math.round(result.monthlySavingsTarget))}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-sm text-muted-foreground">5-Year Earnings Gain</span>
+                        <span className="font-bold text-primary">{formatINR(result.fiveYearGain)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-sm text-muted-foreground">Monthly EMI (if financed)</span>
+                        <span className="font-medium">{formatINR(result.monthlyEMI)}/mo</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-sm text-muted-foreground">Transition Period</span>
+                        <span className="font-medium">{result.transitionMonths} months</span>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={result.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorTarget" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                      <XAxis dataKey="year" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value/1000}k`} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#000000dd', borderColor: '#ffffff20', borderRadius: '12px' }}
-                        itemStyle={{ color: '#fff' }}
-                        formatter={(value: number) => [`₹${value.toLocaleString()}`, '']}
-                      />
-                      <Area type="monotone" dataKey="currentStatus" name="Current Path" stroke="#ffffff40" fillOpacity={1} fill="url(#colorCurrent)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="targetStatus" name="Simulated Path" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorTarget)" strokeWidth={3} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Bottom Metrics */}
-              <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/5">
-                 <div className="flex justify-between items-end mb-4">
-                   <div>
-                     <h3 className="text-lg font-display font-medium text-white">Monthly Transition Affordability</h3>
-                     <p className="text-sm text-white/40 mt-1">Estimated buffer available during transition period</p>
-                   </div>
-                   <div className="text-right">
-                     <span className="text-2xl font-bold text-white">₹{result.monthlyAffordability.toLocaleString()}</span>
-                     <span className="text-xs text-white/40 block">/ month</span>
-                   </div>
-                 </div>
-                 <Progress value={result.affordabilityPercentage} className="h-3 bg-black/50" />
-                 <div className="flex justify-between mt-2">
-                   <span className="text-xs text-white/30">High Constraint</span>
-                   <span className="text-xs text-white/30">Comfortable</span>
-                 </div>
-              </div>
-
-            </motion.div>
-          )}
-        </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );
-};
-
-export default Finance;
+}

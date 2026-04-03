@@ -2,7 +2,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mic, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +21,9 @@ const ROLES = [
   "UX Designer",
   "Mobile Developer",
   "Machine Learning Engineer",
+  "Cloud Architect",
+  "Cybersecurity Analyst",
+  "QA Engineer",
 ];
 
 interface Props {
@@ -28,9 +33,9 @@ interface Props {
 const InterviewSetup = ({ onStart }: Props) => {
   const { user } = useAuth();
   const [selectedRole, setSelectedRole] = useState("");
+  const [customRole, setCustomRole] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fetch most recent roadmap for skills
   const { data: roadmap } = useQuery({
     queryKey: ["latest-roadmap", user?.id],
     queryFn: async () => {
@@ -47,31 +52,27 @@ const InterviewSetup = ({ onStart }: Props) => {
 
   const roadmapData = roadmap?.roadmap_data as any;
   const skills: string[] = roadmapData?.current_skills || roadmapData?.skills_to_learn || [];
+  const effectiveRole = customRole.trim() || selectedRole;
 
   const handleStart = async () => {
-    if (!selectedRole) return;
+    if (!effectiveRole) return;
     setLoading(true);
     try {
-      // Try to get resume text
       let resumeText = "";
-      if (roadmap?.resume_storage_path) {
+      if (roadmap?.resume_storage_path && roadmap.resume_storage_path !== 'direct-goal') {
         try {
           const { data, error } = await supabase.storage.from("resumes").download(roadmap.resume_storage_path);
-          if (error) {
-            console.warn("Could not download resume for mock interview context:", error);
-          } else if (data) {
+          if (!error && data) {
             resumeText = await data.text();
           }
         } catch (downloadErr) {
-          console.warn("Resume download failed, proceeding without it:", downloadErr);
+          console.warn("Resume download failed:", downloadErr);
         }
       }
-      await onStart(selectedRole, skills, resumeText);
+      await onStart(effectiveRole, skills, resumeText);
     } catch (err: any) {
-      console.error("Failed to start mock interview:", err);
-      // Ensure we display an error toast here if something unexpectedly throws
-      // Although onStart has its own try/catch, it's good to be safe.
-      toast.error(err.message || "Failed to start the interview setup.");
+      console.error("Failed to start:", err);
+      toast.error(err.message || "Failed to start interview.");
     } finally {
       setLoading(false);
     }
@@ -93,8 +94,8 @@ const InterviewSetup = ({ onStart }: Props) => {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Target Role</label>
-          <Select value={selectedRole} onValueChange={setSelectedRole}>
+          <Label className="text-sm font-medium">Select a Role</Label>
+          <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); setCustomRole(""); }}>
             <SelectTrigger>
               <SelectValue placeholder="Select a role..." />
             </SelectTrigger>
@@ -104,6 +105,20 @@ const InterviewSetup = ({ onStart }: Props) => {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+          <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or type a custom role</span></div>
+        </div>
+
+        <div className="space-y-2">
+          <Input 
+            value={customRole} 
+            onChange={e => { setCustomRole(e.target.value); if (e.target.value) setSelectedRole(""); }}
+            placeholder="e.g. AI Prompt Engineer, Solutions Architect..."
+            className="bg-background"
+          />
         </div>
 
         {skills.length > 0 && (
@@ -121,7 +136,7 @@ const InterviewSetup = ({ onStart }: Props) => {
 
         <Button
           onClick={handleStart}
-          disabled={!selectedRole || loading}
+          disabled={!effectiveRole || loading}
           className="gradient-bg text-primary-foreground"
           size="lg"
         >

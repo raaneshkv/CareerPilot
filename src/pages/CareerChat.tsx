@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Sparkles, Navigation, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -15,10 +18,39 @@ interface Message {
 
 const SUGGESTIONS = [
   "What skills do I need for a Product Management role?",
-  "Can you review my recent Roadmap?",
   "How do I transition from QA to Developer?",
-  "What are the highest paying tech jobs right now?",
+  "What are the highest paying tech jobs in India?",
+  "Help me plan a 6-month upskilling roadmap",
 ];
+
+/* Fallback response generator (used when AI call fails) */
+function generateFallbackResponse(text: string): string {
+  const lower = text.toLowerCase();
+  
+  if (lower.includes("salary") || lower.includes("pay") || lower.includes("package") || lower.includes("ctc")) {
+    return "Based on current Indian tech market data (2025-2026):\n\n• **Fresher (0-1yr):** ₹4L-10L depending on role and company\n• **Mid-level (2-5yr):** ₹10L-25L for most engineering/data roles\n• **Senior (5+yr):** ₹20L-50L+ for specialized roles (ML/Cloud/Architecture)\n\nThe highest-paying niches right now are GenAI/LLM engineering, cloud architecture, and cybersecurity. Would you like a detailed breakdown for a specific role?";
+  }
+  if (lower.includes("resume") || lower.includes("cv")) {
+    return "Great question about resumes! Here are my top recommendations:\n\n1. **Quantify everything** — 'Improved load time by 40%' beats 'Improved load time'\n2. **Tailor per application** — Match keywords from the job description\n3. **ATS-friendly format** — Use our Resume Builder to check your ATS score\n4. **Keep it to 1-2 pages** — Recruiters spend 7 seconds on first scan\n\nWant me to guide you to our AI Resume Builder?";
+  }
+  if (lower.includes("interview") || lower.includes("prep")) {
+    return "Interview preparation is a game-changer. Here's a structured plan:\n\n1. **Technical:** Practice 2-3 coding problems daily on LeetCode (focus on patterns, not quantity)\n2. **System Design:** Study Gaurav Sen's YouTube channel — it's excellent for Indian tech interviews\n3. **Behavioral:** Prepare 5-6 STAR stories covering leadership, conflict, and failure\n4. **Mock Practice:** Use our AI Mock Interview to simulate real conditions\n\nWhat role are you targeting? I can give more specific advice.";
+  }
+  if (lower.includes("roadmap") || lower.includes("path") || lower.includes("plan")) {
+    return "A structured career roadmap is essential. Here's my recommended approach:\n\n1. **Define your target** — Pick 2-3 roles you're interested in\n2. **Gap analysis** — Use our Skill Analyzer to identify what's missing\n3. **Timeline** — Set 3-month milestones with specific deliverables\n4. **Projects** — Build 2-3 showcase projects that demonstrate your target skills\n5. **Network** — Engage on LinkedIn and attend tech meetups\n\nWould you like to upload your resume so I can create a personalized roadmap?";
+  }
+  if (lower.includes("switch") || lower.includes("transition") || lower.includes("change")) {
+    return "Career transitions are more common than you think in tech! Here's what I recommend:\n\n1. **Identify transferable skills** — Your existing experience has more value than you realize\n2. **Bridge the gap** — Focus on the 2-3 skills that are unique to your target role\n3. **Start small** — Take on side projects or freelance gigs in your target domain\n4. **Financial planning** — Use our Financial Engine to plan the transition costs\n5. **Timeline** — Most transitions take 6-12 months of dedicated effort\n\nWhat specific transition are you considering?";
+  }
+  if (lower.includes("skill") || lower.includes("learn") || lower.includes("course")) {
+    return "Smart question! Here are the most in-demand skills for 2025-2026:\n\n🔥 **Explosive Growth:** GenAI/LLMs, Prompt Engineering, MLOps\n📈 **High Demand:** React/Next.js, Python, AWS, Kubernetes\n💰 **Highest Paying:** Cloud Architecture, ML Engineering, Cybersecurity\n\nI recommend focusing on depth over breadth. Master 2-3 core skills rather than spreading thin across 10. Our Skill Analyzer can identify your specific gaps.\n\nWhat's your current tech stack?";
+  }
+  if (lower.includes("thank")) {
+    return "You're welcome! Remember, consistent small steps lead to massive career growth. I'm here 24/7 if you need any more guidance. Keep pushing! 🚀";
+  }
+  
+  return "That's a great topic to explore. Based on current market trends, I'd suggest breaking this down into actionable steps:\n\n1. **Research** — Look at what top professionals in this area are doing\n2. **Identify gaps** — Use our tools to find what you need to improve\n3. **Take action** — Start with the highest-impact, lowest-effort items first\n4. **Iterate** — Track progress monthly and adjust your approach\n\nCould you give me a bit more detail about your specific situation? The more context I have, the more targeted my advice can be.";
+}
 
 export default function CareerChat() {
   const { user, profile } = useAuth();
@@ -35,63 +67,71 @@ export default function CareerChat() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Fetch user context from latest roadmap
+  const { data: latestRoadmap } = useQuery({
+    queryKey: ["chat-context", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("roadmaps")
+        .select("roadmap_data, resume_file_name")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userContext = latestRoadmap ? (() => {
+    const rd = latestRoadmap.roadmap_data as any;
+    const skills = rd?.current_skills?.join(', ') || '';
+    const roles = rd?.career_roles?.join(', ') || '';
+    return `Resume: ${latestRoadmap.resume_file_name || 'uploaded'}. Skills: ${skills}. Target roles: ${roles}.`;
+  })() : '';
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isTyping]);
 
-  const handleSend = (text: string) => {
-    if (!text.trim()) return;
+  const handleSend = async (text: string) => {
+    if (!text.trim() || isTyping) return;
 
     const newUserMsg: Message = { id: Date.now().toString(), role: "user", content: text };
     setMessages(prev => [...prev, newUserMsg]);
     setInput("");
     setIsTyping(true);
 
-    // Highly dynamic simulated AI response
-    setTimeout(() => {
-      let aiResponse = "";
-      const lowerText = text.toLowerCase();
-      
-      // Intent mapping
-      if (lowerText.includes("product management") || lowerText.includes("pm")) {
-        aiResponse = "Product Management requires a mix of strategic thinking, user empathy, and technical understanding. I recommend focusing on Agile methodologies, Data Analytics, and UX principles first. Should we create a roadmap for this?";
-      } else if (lowerText.includes("qa") && lowerText.includes("developer")) {
-        aiResponse = "Transitioning from QA to Developer is a fantastic move! Since you already understand testing, you have a solid foundation. Start by learning JavaScript or Python, and build a few small web applications. Would you like a list of starter projects?";
-      } else if (lowerText.includes("hi") || lowerText.includes("hello") || lowerText.includes("hey")) {
-        aiResponse = "Hello again! How can I help you accelerate your career today? We can analyze skills, review interview practices, or explore entirely new paths.";
-      } else if (lowerText.includes("salary") || lowerText.includes("pay") || lowerText.includes("money") || lowerText.includes("earning")) {
-        aiResponse = "If maximizing salary is your primary goal, the current data points strongly towards AI/ML Engineering, Cloud Architecture, and specialized Cybersecurity roles. Based on the Trends dashboard, AI Engineers are seeing over $150k starting in major hubs. Should we identify the skills you need for one of those?";
-      } else if (lowerText.includes("resume") || lowerText.includes("cv")) {
-        aiResponse = "I can definitely help with your resume! You can use our AI Resume Builder to target specific job descriptions and instantly measure your ATS score. Shall I guide you to that feature?";
-      } else if (lowerText.includes("roadmap") || lowerText.includes("future")) {
-        aiResponse = "Career Pilot specializes in dynamic roadmaps. If you provide me with your target goal, I can break down the exact timeline, courses, and milestones you need to achieve it. What is your dream role?";
-      } else if (lowerText.includes("interview") || lowerText.includes("prep")) {
-        aiResponse = "Interview preparation is critical. We offer an AI Mock Interview module that simulates real industry questions and evaluates your spoken answers. Do you want to try a technical or behavioral interview simulation?";
-      } else if (lowerText.includes("skill") || lowerText.includes("learn") || lowerText.includes("course")) {
-        aiResponse = "Upskilling is the best investment you can make. It's often best to bridge obvious gaps first. Have you run the Skill Gap Analyzer recently to see what's missing for your target roles?";
-      } else if (lowerText.includes("thank")) {
-        aiResponse = "You're very welcome! I'm here 24/7 if you need any more guidance or a quick motivation boost.";
-      } else if (lowerText.length < 15) {
-        aiResponse = "I'm listening! Could you provide a bit more detail so I can give you the best specific advice?";
-      } else {
-        // Fallbacks that cycle or sound intelligent
-        const fallbacks = [
-          "That's a very interesting perspective. Have you considered how this aligns with the current market trends we're tracking?",
-          "I hear you. Balancing those factors is tough. My suggestion would be to focus on small, actionable milestones first. What's the immediate next step you can take today?",
-          "That makes sense. Many professionals in the tech industry navigate similar challenges. Would you like me to map out a few alternative paths based on what you just shared?",
-          "Fascinating. If you pursue this, the compounding effect on your career over the next 5 years could be massive. Should we run this scenario through the Future Simulation engine?"
-        ];
-        aiResponse = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-      }
+    try {
+      // Build conversation history for context
+      const conversationHistory = messages.slice(-6).map(m => ({
+        role: m.role === "ai" ? "assistant" : "user",
+        content: m.content,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("career-chat", {
+        body: { message: text, conversationHistory, userContext },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setMessages(prev => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: "ai", content: aiResponse }
+        { id: (Date.now() + 1).toString(), role: "ai", content: data.response }
       ]);
+    } catch (err: any) {
+      console.warn("AI chat failed, using fallback:", err.message);
+      // Use intelligent fallback
+      const fallbackResponse = generateFallbackResponse(text);
+      setMessages(prev => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), role: "ai", content: fallbackResponse }
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1500 + Math.random() * 1000); // randomize typing delay slightly
+    }
   };
 
   return (
@@ -100,11 +140,10 @@ export default function CareerChat() {
         <h1 className="text-2xl font-bold font-display flex items-center gap-2">
           AI Career <span className="gradient-text">Mentor</span> <Sparkles className="w-5 h-5 text-primary" />
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Get personalized guidance 24/7</p>
+        <p className="text-muted-foreground text-sm mt-1">Get personalized, AI-powered guidance 24/7</p>
       </motion.div>
 
       <Card className="glass-card flex-1 flex flex-col overflow-hidden border-primary/20 shadow-lg shadow-primary/5">
-        {/* Chat Area */}
         <ScrollArea className="flex-1 p-4 md:p-6">
           <div className="space-y-6 pb-4">
             <AnimatePresence initial={false}>
@@ -126,7 +165,11 @@ export default function CareerChat() {
                       ? "bg-primary text-primary-foreground rounded-tr-none shadow-md shadow-primary/20" 
                       : "bg-sidebar border border-border text-sidebar-foreground rounded-tl-none"
                   }`}>
-                    {msg.content}
+                    <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{
+                      __html: msg.content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br/>')
+                    }} />
                   </div>
                 </motion.div>
               ))}
@@ -148,7 +191,6 @@ export default function CareerChat() {
           </div>
         </ScrollArea>
 
-        {/* Input Area */}
         <div className="p-4 bg-sidebar/50 border-t border-border backdrop-blur-sm">
           {messages.length < 3 && !isTyping && (
             <motion.div 
@@ -167,28 +209,20 @@ export default function CareerChat() {
             </motion.div>
           )}
 
-          <form 
-            onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
-            className="flex items-center gap-2 relative"
-          >
+          <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }} className="flex items-center gap-2 relative">
             <Input 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything about your career..."
               className="bg-background border-primary/20 focus-visible:ring-primary/50 pr-12 h-12 rounded-xl text-base"
             />
-            <Button 
-              type="submit" 
-              size="icon" 
-              disabled={!input.trim() || isTyping}
-              className="absolute right-1.5 w-9 h-9 rounded-lg gradient-bg"
-            >
+            <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="absolute right-1.5 w-9 h-9 rounded-lg gradient-bg">
               <Navigation className="w-4 h-4 ml-0.5" />
             </Button>
           </form>
           <div className="text-center mt-2">
             <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold flex items-center justify-center gap-1">
-              <Bot className="w-3 h-3" /> CareerPilot AI Mentorship Model
+              <Bot className="w-3 h-3" /> Powered by AI · Falls back to curated responses
             </span>
           </div>
         </div>
