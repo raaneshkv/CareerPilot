@@ -200,60 +200,68 @@ export default function SkillAnalyzer() {
     localStorage.setItem("skillStats", JSON.stringify({ currentLevel, currentXP, targetXP, streakDays, trophies }));
   }, [currentLevel, currentXP, targetXP, streakDays, trophies]);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!targetJob.trim()) { toast.error("Enter a target job title"); return; }
+    if (!currentSkills.trim()) { toast.error("Enter your current skills"); return; }
     setIsAnalyzing(true);
     setHasResults(false);
 
-    setTimeout(() => {
-      const userSkills = currentSkills.toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-      const requiredSkills = findBestJobMatch(targetJob);
-
-      // Calculate real skill levels
-      const analyzedSkills = requiredSkills.map(req => {
-        const hasSkill = userSkills.some(us => 
-          us.includes(req.skill.toLowerCase()) || req.skill.toLowerCase().includes(us)
-        );
-        const currentLevel = hasSkill ? Math.min(85, 40 + Math.floor(Math.random() * 35)) : Math.floor(Math.random() * 25);
-        return {
-          skill: req.skill,
-          current: currentLevel,
-          required: req.weight,
-        };
+    try {
+      const response = await fetch("http://localhost:8000/match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          resume: currentSkills,
+          job: targetJob,
+        }),
       });
 
-      setSkillData(analyzedSkills);
+      if (!response.ok) {
+        throw new Error("Failed to connect to the backend");
+      }
 
-      // Calculate real job readiness
-      const totalRequired = analyzedSkills.reduce((sum, s) => sum + s.required, 0);
-      const totalCurrent = analyzedSkills.reduce((sum, s) => sum + Math.min(s.current, s.required), 0);
-      const readiness = totalRequired > 0 ? Math.round((totalCurrent / totalRequired) * 100) : 0;
-      setMatchPercentage(readiness);
+      const data = await response.json();
+      
+      const score = Math.round(data.match_score);
+      const missing: string[] = data.missing_skills || [];
 
-      // Generate quests only for gaps
-      const gaps = analyzedSkills.filter(s => s.current < s.required - 10);
-      const gapQuests = gaps.map((gap, i) => {
-        const reqInfo = requiredSkills.find(r => r.skill === gap.skill);
-        const gapSize = gap.required - gap.current;
-        const difficulty = gapSize > 50 ? "Legendary" : gapSize > 30 ? "Epic" : "Rare";
-        const xp = Math.round(gapSize * 15);
+      setMatchPercentage(score);
+
+      // Generate quests for missing skills using our AI response
+      const gapQuests = missing.map((skillName, i) => {
         return {
-          title: `Master ${gap.skill}`,
-          skill: gap.skill,
-          xp,
-          difficulty,
-          course: reqInfo?.course || `Learn ${gap.skill}`,
-          url: reqInfo?.url || `https://google.com/search?q=learn+${encodeURIComponent(gap.skill)}`,
+          title: `Master ${skillName}`,
+          skill: skillName,
+          xp: 500,
+          difficulty: "Epic",
+          course: `Learn ${skillName}`,
+          url: `https://google.com/search?q=learn+${encodeURIComponent(skillName)}`,
           iconName: QUEST_ICONS[i % QUEST_ICONS.length],
           ...QUEST_COLORS[i % QUEST_COLORS.length],
         };
       });
 
       setQuests(gapQuests);
+
+      // Setup radar chart data
+      const analyzedSkills = missing.map(m => ({ skill: m, current: 0, required: 100 }));
+      const userSkills = currentSkills.split(',').map(s => s.trim()).filter(Boolean);
+      // Give the user credit for their first handful of existing skills on the radar chart
+      userSkills.slice(0, 5).forEach(s => {
+        analyzedSkills.push({ skill: s, current: 100, required: 100 });
+      });
+
+      setSkillData(analyzedSkills);
       setHasResults(true);
+      toast.success("Skill analysis complete! Model inference successful.", { icon: "⚔️" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Error connecting to AI backend. Make sure it is running on port 8000.");
+    } finally {
       setIsAnalyzing(false);
-      toast.success("Skill analysis complete!", { icon: "⚔️" });
-    }, 1800);
+    }
   };
 
   const openQuiz = (quest: any) => {

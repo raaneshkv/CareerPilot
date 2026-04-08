@@ -110,11 +110,17 @@ export default function CareerChat() {
         content: m.content,
       }));
 
-      const { data, error } = await supabase.functions.invoke("career-chat", {
-        body: { message: text, conversationHistory, userContext },
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, conversationHistory, userContext }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error("Chat request failed");
+      }
+
+      const data = await response.json();
       if (data?.error) throw new Error(data.error);
 
       setMessages(prev => [

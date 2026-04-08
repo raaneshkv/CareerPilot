@@ -146,8 +146,53 @@ const Roadmap = () => {
     }
   }, []);
 
+  const [localRoadmap, setLocalRoadmap] = useState<any>(null);
+
+  const mockRoadmapData = (roleOrFile: string) => ({
+    summary: `Your personalized path based on ${roleOrFile}`,
+    current_skills: ["React", "JavaScript", "Communication"],
+    career_roles: ["Frontend Dev", "Full Stack Dev"],
+    nodes: [
+      {
+        id: "node-1",
+        title: "Advanced React Patterns",
+        description: "Master hooks, context, and performance optimization.",
+        currentLevel: 40,
+        targetLevel: 90,
+        category: "frontend",
+        status: "pending",
+        concepts: ["Custom Hooks", "Render Props", "useMemo"],
+        resources: {
+          youtube: [{ label: "React Performance", url: "#" }],
+          docs: [{ label: "React Docs", url: "#" }],
+          github: []
+        }
+      },
+      {
+        id: "node-2",
+        title: "System Design basics",
+        description: "Understand scaling, caching, and databases.",
+        currentLevel: 10,
+        targetLevel: 70,
+        category: "backend",
+        status: "pending",
+        concepts: ["Load Balancing", "Caching Strategy"],
+        resources: {
+          youtube: [{ label: "System Design for beginners", url: "#" }],
+          docs: [],
+          github: []
+        }
+      }
+    ]
+  });
+
   const handleGenerate = async () => {
-    if (!file || !user) return;
+    if (!file) return;
+    if (!user) {
+      toast.error("Please sign in to generate and save your roadmap.");
+      navigate("/auth");
+      return;
+    }
     setGenerating(true);
 
     try {
@@ -166,13 +211,19 @@ const Roadmap = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("analyze-resume", {
-        body: { resumeText: text, fileName: file.name },
+      const response = await fetch("http://localhost:8000/roadmap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText: text, fileName: file.name }),
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
+      if (!response.ok) {
+        throw new Error("Failed to generate roadmap from local AI");
+      }
+
+      const data = await response.json();
       let roadmapData = data.roadmap;
+      
       if (!roadmapData || (!roadmapData.nodes && !roadmapData.skills_to_learn)) {
         throw new Error("AI returned invalid roadmap data. Please try again.");
       }
@@ -228,17 +279,28 @@ const Roadmap = () => {
   };
 
   const handleGenerateDirect = async () => {
-    if (!targetRoleInput || !user) return;
+    if (!targetRoleInput) return;
+    if (!user) {
+      toast.error("Please sign in to generate and save your roadmap.");
+      navigate("/auth");
+      return;
+    }
     setGenerating(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("analyze-resume", {
-        body: { roadmapTarget: targetRoleInput },
+      const response = await fetch("http://localhost:8000/roadmap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roadmapTarget: targetRoleInput }),
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
+      if (!response.ok) {
+        throw new Error("Failed to generate roadmap from local AI");
+      }
+
+      const data = await response.json();
       let roadmapData = data.roadmap;
+      
       if (!roadmapData || (!roadmapData.nodes && !roadmapData.skills_to_learn)) {
         throw new Error("AI returned invalid data. Please try again.");
       }
@@ -276,6 +338,7 @@ const Roadmap = () => {
   };
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Student";
+  const displayedRoadmap = localRoadmap || activeRoadmap;
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
@@ -429,27 +492,27 @@ const Roadmap = () => {
       </motion.div>
 
       {/* Active Roadmap */}
-      {activeRoadmap && (
+      {displayedRoadmap && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold font-display">Current Roadmap</h2>
-            <Button variant="ghost" size="sm" onClick={() => setActiveRoadmapId(null)}>
+            <Button variant="ghost" size="sm" onClick={() => { setActiveRoadmapId(null); setLocalRoadmap(null); }}>
               ← Back to list
             </Button>
           </div>
-          {(activeRoadmap.roadmap_data as any)?.nodes ? (
+          {(displayedRoadmap.roadmap_data as any)?.nodes ? (
             <PersonalizedRoadmap
-              roadmap={activeRoadmap.roadmap_data as any}
-              onUpdateNodes={(nodes) => handleUpdateNodes(activeRoadmap.id, nodes)}
+              roadmap={displayedRoadmap.roadmap_data as any}
+              onUpdateNodes={(nodes) => handleUpdateNodes(displayedRoadmap.id, nodes)}
             />
           ) : (
-            <RoadmapDisplay roadmap={activeRoadmap.roadmap_data as any} />
+            <RoadmapDisplay roadmap={displayedRoadmap.roadmap_data as any} />
           )}
         </div>
       )}
 
       {/* Empty State */}
-      {!activeRoadmap && (!roadmaps || roadmaps.length === 0) && !generating && (
+      {!displayedRoadmap && (!roadmaps || roadmaps.length === 0) && !generating && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -464,7 +527,7 @@ const Roadmap = () => {
       )}
 
       {/* Recent Roadmaps — always visible list */}
-      {roadmaps && roadmaps.length > 0 && !activeRoadmap && (
+      {roadmaps && roadmaps.length > 0 && !displayedRoadmap && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

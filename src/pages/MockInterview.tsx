@@ -74,12 +74,17 @@ export default function MockInterview() {
     setRole(selectedRole);
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-interview", {
-        body: { role: selectedRole, skills, resumeText },
+      const response = await fetch("http://localhost:8000/interview/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: selectedRole, skills, resumeText }),
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (!response.ok) {
+        throw new Error("Failed to generate interview from local AI");
+      }
+
+      const data = await response.json();
 
       if (!data?.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
         throw new Error("No questions generated");

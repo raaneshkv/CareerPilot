@@ -72,15 +72,21 @@ const InterviewSession = ({ questions, role, onFinish }: Props) => {
     } else {
       try {
         // Race between evaluation and a 30s client-side timeout
-        const evaluationPromise = supabase.functions.invoke("evaluate-answer", {
-          body: { question: current.question, answer, questionType: current.type, role },
+        const evaluationPromise = fetch("http://localhost:8000/interview/evaluate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: current.question, answer, questionType: current.type, role }),
+        }).then(res => {
+          if (!res.ok) throw new Error("Evaluation request failed");
+          return res.json();
         });
+        
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("Evaluation timed out")), 30000)
         );
 
-        const { data, error } = await Promise.race([evaluationPromise, timeoutPromise]);
-        if (error) throw error;
+        const data = await Promise.race([evaluationPromise, timeoutPromise]);
+        
         if (data.error) throw new Error(data.error);
         result = {
           questionId: current.id,
@@ -93,14 +99,14 @@ const InterviewSession = ({ questions, role, onFinish }: Props) => {
         };
       } catch (e: any) {
         console.error("Evaluation error:", e);
-        toast.error("Evaluation slow — default scores applied. Moving on.");
+        toast.error("Evaluation error — default scores applied. Moving on.");
         result = {
           questionId: current.id,
           answer,
           technical_score: 5,
           clarity_score: 5,
           structure_score: 5,
-          feedback: "Evaluation timed out. Default scores were applied.",
+          feedback: "Evaluation failed or timed out. Default scores were applied.",
           skipped: false,
         };
       }

@@ -55,7 +55,10 @@ const InterviewSetup = ({ onStart }: Props) => {
   const effectiveRole = customRole.trim() || selectedRole;
 
   const handleStart = async () => {
-    if (!effectiveRole) return;
+    if (!effectiveRole) {
+      toast.error("Please select or type a role before starting.");
+      return;
+    }
     setLoading(true);
     try {
       let resumeText = "";
