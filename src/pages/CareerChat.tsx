@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -110,7 +111,7 @@ export default function CareerChat() {
         content: m.content,
       }));
 
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, conversationHistory, userContext }),

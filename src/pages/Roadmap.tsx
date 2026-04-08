@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PersonalizedRoadmap from "@/components/PersonalizedRoadmap";
 import RoadmapDisplay from "@/components/RoadmapDisplay";
+import { API_URL } from "@/lib/api";
 import type { RoadmapNodeData } from "@/components/RoadmapNode";
 
 import * as pdfjsLib from "pdfjs-dist";
@@ -82,6 +83,7 @@ const Roadmap = () => {
       const { data, error } = await supabase
         .from("roadmaps")
         .select("*")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;
@@ -199,10 +201,20 @@ const Roadmap = () => {
       const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
       const filePath = `${user.id}/${Date.now()}_${safeName}`;
       
-      const { error: uploadError } = await supabase.storage
-        .from("resumes")
-        .upload(filePath, file);
-      if (uploadError) throw uploadError;
+      // Try to upload to storage, but don't block roadmap generation if it fails
+      let storagePath = filePath;
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from("resumes")
+          .upload(filePath, file);
+        if (uploadError) {
+          console.warn("Resume upload failed (storage may not be configured):", uploadError.message);
+          storagePath = "upload-skipped";
+        }
+      } catch (e) {
+        console.warn("Resume storage unavailable:", e);
+        storagePath = "upload-skipped";
+      }
 
       const text = await extractTextFromFile(file);
       if (!text || text.trim().length < 50) {
@@ -211,14 +223,18 @@ const Roadmap = () => {
         return;
       }
 
-      const response = await fetch("http://localhost:8000/roadmap", {
+      // Truncate to avoid exceeding LLM token limits
+      const truncatedText = text.slice(0, 6000);
+
+      const response = await fetch(`${API_URL}/roadmap`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText: text, fileName: file.name }),
+        body: JSON.stringify({ resumeText: truncatedText, fileName: file.name }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate roadmap from local AI");
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to generate roadmap. Please try again.");
       }
 
       const data = await response.json();
@@ -238,7 +254,7 @@ const Roadmap = () => {
         .insert({
           user_id: user.id,
           resume_file_name: file.name,
-          resume_storage_path: filePath,
+          resume_storage_path: storagePath,
           roadmap_data: roadmapData,
         })
         .select("id")
@@ -288,7 +304,7 @@ const Roadmap = () => {
     setGenerating(true);
 
     try {
-      const response = await fetch("http://localhost:8000/roadmap", {
+      const response = await fetch(`${API_URL}/roadmap`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roadmapTarget: targetRoleInput }),

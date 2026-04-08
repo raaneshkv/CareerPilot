@@ -10,6 +10,7 @@ import { Target, Zap, Loader2, BookOpen, ExternalLink, ArrowRight, Trophy, Flame
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { API_URL } from "@/lib/api";
 
 /* ---- Comprehensive Job Skill Requirements Database ---- */
 const JOB_SKILL_DB: Record<string, { skill: string; weight: number; course: string; url: string }[]> = {
@@ -207,7 +208,7 @@ export default function SkillAnalyzer() {
     setHasResults(false);
 
     try {
-      const response = await fetch("http://localhost:8000/match", {
+      const response = await fetch(`${API_URL}/match`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

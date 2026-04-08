@@ -7,6 +7,7 @@ import InterviewSetup from "@/components/interview/InterviewSetup";
 import InterviewSession from "@/components/interview/InterviewSession";
 import InterviewResults from "@/components/interview/InterviewResults";
 import InterviewHistory from "@/components/interview/InterviewHistory";
+import { API_URL } from "@/lib/api";
 
 export interface InterviewQuestion {
   id: string;
@@ -74,7 +75,7 @@ export default function MockInterview() {
     setRole(selectedRole);
 
     try {
-      const response = await fetch("http://localhost:8000/interview/generate", {
+      const response = await fetch(`${API_URL}/interview/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: selectedRole, skills, resumeText }),
@@ -128,8 +129,6 @@ export default function MockInterview() {
         await supabase.from("interview_sessions").insert({
           user_id: user.id,
           role,
-          questions: questions as any,
-          answers: results as any,
           overall_score: overall,
           status: "completed",
         });

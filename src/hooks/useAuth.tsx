@@ -22,42 +22,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-    setProfile(data);
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      setProfile(data);
+    } catch (e) {
+      console.error("Failed to fetch profile:", e);
+    }
   }, []);
 
+  // Initialize: get session once on mount
   useEffect(() => {
-    let initialSessionResolved = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
+    // Listen for auth changes — keep this synchronous (no async Supabase calls here)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        // Skip early events until getSession has resolved
-        if (!initialSessionResolved) return;
+      (_event, session) => {
         setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
+        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      initialSessionResolved = true;
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).then(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, []);
+
+  // Fetch profile whenever user changes (separate from the auth listener)
+  useEffect(() => {
+    if (user) {
+      fetchProfile(user.id);
+    } else {
+      setProfile(null);
+    }
+  }, [user, fetchProfile]);
 
   const refetchProfile = () => {
     if (user) fetchProfile(user.id);

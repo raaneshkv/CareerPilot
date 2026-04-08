@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, SkipForward, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { InterviewQuestion, AnswerResult } from "@/pages/MockInterview";
+import { API_URL } from "@/lib/api";
 
 const TIMER_SECONDS = 60;
 
@@ -38,9 +39,13 @@ const InterviewSession = ({ questions, role, onFinish }: Props) => {
   const current = questions[currentIndex];
   const progress = ((currentIndex) / questions.length) * 100;
 
+  // Track if timer has already triggered auto-skip for current question
+  const timerTriggeredRef = useRef(false);
+
   // Timer
   useEffect(() => {
     setTimeLeft(TIMER_SECONDS);
+    timerTriggeredRef.current = false;
     const interval = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -52,6 +57,14 @@ const InterviewSession = ({ questions, role, onFinish }: Props) => {
     }, 1000);
     return () => clearInterval(interval);
   }, [currentIndex]);
+
+  // Auto-skip when timer hits 0
+  useEffect(() => {
+    if (timeLeft === 0 && !evaluating && !timerTriggeredRef.current) {
+      timerTriggeredRef.current = true;
+      evaluateAndProceed(true);
+    }
+  }, [timeLeft, evaluating]);
 
   const evaluateAndProceed = useCallback(async (skipped: boolean) => {
     if (evaluating) return;
@@ -72,7 +85,7 @@ const InterviewSession = ({ questions, role, onFinish }: Props) => {
     } else {
       try {
         // Race between evaluation and a 30s client-side timeout
-        const evaluationPromise = fetch("http://localhost:8000/interview/evaluate", {
+        const evaluationPromise = fetch(`${API_URL}/interview/evaluate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question: current.question, answer, questionType: current.type, role }),
