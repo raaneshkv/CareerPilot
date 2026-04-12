@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { Sparkles, Loader2, Brain, ShieldCheck, Clock, TrendingUp, Zap, IndianRupee } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 /* ===== Role Database for Simulation ===== */
 const ROLE_DB: Record<string, { baseSalary: number; growthRate: number; stability: number; effortHrsWeek: number; stressPattern: string; milestoneTemplate: string[] }> = {
@@ -46,51 +47,66 @@ export default function Simulation() {
   const [location, setLocation] = useState("india");
   const [timeframe, setTimeframe] = useState("5");
   const [simulationData, setSimulationData] = useState<any>(null);
+  const [semanticMatch, setSemanticMatch] = useState<{ score: number; label: string } | null>(null);
 
-  const handleSimulate = () => {
+  const handleSimulate = async () => {
     if (!currentRole || !targetRole) return;
     setIsSimulating(true);
     setHasResult(false);
+    setSemanticMatch(null);
 
-    setTimeout(() => {
-      const currentData = findRole(currentRole);
-      const targetData = findRole(targetRole);
-      const years = parseInt(timeframe);
+    // ── Call /career/simulate-score in parallel ────────────────
+    const modelFetch = fetch(`${API_URL}/career/simulate-score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ current_role: currentRole, target_role: targetRole }),
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      // Generate salary projection
-      const salaryProjection = [];
-      for (let yr = 0; yr <= years; yr++) {
-        const currentSal = currentData.baseSalary * Math.pow(1 + currentData.growthRate * 0.6, yr);
-        const targetSal = yr === 0 ? currentData.baseSalary : targetData.baseSalary * Math.pow(1 + targetData.growthRate, yr - 1);
-        salaryProjection.push({
-          year: `Year ${yr}`,
-          "Stay Current": Math.round(currentSal),
-          "Switch Path": Math.round(targetSal),
-        });
-      }
+    // ── Run local simulation (kept as-is) ────────────────────
+    const currentData = findRole(currentRole);
+    const targetData  = findRole(targetRole);
+    const years       = parseInt(timeframe);
 
-      // Generate milestones
-      const milestones = targetData.milestoneTemplate.slice(0, years).map((m, i) => {
-        const timeLabel = i === 0 ? "Month 6" : `Year ${i + (i > 0 ? 0.5 : 0)}`;
-        return `${timeLabel}: ${m}`;
+    const salaryProjection = [];
+    for (let yr = 0; yr <= years; yr++) {
+      const currentSal = currentData.baseSalary * Math.pow(1 + currentData.growthRate * 0.6, yr);
+      const targetSal  = yr === 0 ? currentData.baseSalary : targetData.baseSalary * Math.pow(1 + targetData.growthRate, yr - 1);
+      salaryProjection.push({
+        year: `Year ${yr}`,
+        "Stay Current": Math.round(currentSal),
+        "Switch Path":  Math.round(targetSal),
       });
+    }
 
-      const totalEarningsCurrent = salaryProjection.reduce((s, d) => s + d["Stay Current"], 0);
-      const totalEarningsNew = salaryProjection.reduce((s, d) => s + d["Switch Path"], 0);
+    const milestones = targetData.milestoneTemplate.slice(0, years).map((m, i) => {
+      const timeLabel = i === 0 ? "Month 6" : `Year ${i + (i > 0 ? 0.5 : 0)}`;
+      return `${timeLabel}: ${m}`;
+    });
 
-      setSimulationData({
-        salaryProjection,
-        effort: `${targetData.effortHrsWeek > 15 ? "Very High" : targetData.effortHrsWeek > 10 ? "High" : "Moderate"} — Requires ~${targetData.effortHrsWeek}hrs/week of focused upskilling.`,
-        stability: `${targetData.stability >= 90 ? "Very High" : targetData.stability >= 80 ? "High" : "Moderate"} — ${targetData.stability}% projected job retention rate.`,
-        workLifeBalance: targetData.stressPattern,
-        milestones,
-        totalGain: totalEarningsNew - totalEarningsCurrent,
-        finalSalary: salaryProjection[salaryProjection.length - 1]["Switch Path"],
+    const totalEarningsCurrent = salaryProjection.reduce((s, d) => s + d["Stay Current"], 0);
+    const totalEarningsNew     = salaryProjection.reduce((s, d) => s + d["Switch Path"], 0);
+
+    setSimulationData({
+      salaryProjection,
+      effort: `${targetData.effortHrsWeek > 15 ? "Very High" : targetData.effortHrsWeek > 10 ? "High" : "Moderate"} — Requires ~${targetData.effortHrsWeek}hrs/week of focused upskilling.`,
+      stability: `${targetData.stability >= 90 ? "Very High" : targetData.stability >= 80 ? "High" : "Moderate"} — ${targetData.stability}% projected job retention rate.`,
+      workLifeBalance: targetData.stressPattern,
+      milestones,
+      totalGain:   totalEarningsNew - totalEarningsCurrent,
+      finalSalary: salaryProjection[salaryProjection.length - 1]["Switch Path"],
+    });
+
+    // Wait for model result
+    const modelResult = await modelFetch;
+    if (modelResult?.transition_ease_score !== undefined) {
+      setSemanticMatch({
+        score: Math.round(modelResult.transition_ease_score),
+        label: modelResult.effort_label || "",
       });
-      
-      setHasResult(true);
-      setIsSimulating(false);
-    }, 2000);
+    }
+
+    setHasResult(true);
+    setIsSimulating(false);
   };
 
   return (
@@ -147,7 +163,31 @@ export default function Simulation() {
               </motion.div>
             ) : (
               <motion.div key="results" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Semantic Match card from model */}
+                  <Card className="glass-card bg-violet-500/5 border-violet-500/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-violet-400 flex items-center gap-2">
+                        <Zap className="w-4 h-4" /> Semantic Match
+                        <span className="text-[9px] bg-violet-500/20 px-1.5 py-0.5 rounded font-bold">MODEL</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {semanticMatch ? (
+                        <div className="space-y-1">
+                          <div className="flex items-end gap-1">
+                            <span className={`text-2xl font-bold font-display ${
+                              semanticMatch.score >= 60 ? "text-emerald-400" :
+                              semanticMatch.score >= 40 ? "text-amber-400" : "text-rose-400"
+                            }`}>{semanticMatch.score}%</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-snug">{semanticMatch.label}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">Unavailable</p>
+                      )}
+                    </CardContent>
+                  </Card>
                   <Card className="glass-card bg-rose-500/5 border-rose-500/20">
                     <CardHeader className="pb-2">
                        <CardTitle className="text-sm text-rose-500 flex items-center gap-2"><Clock className="w-4 h-4" /> Required Effort</CardTitle>

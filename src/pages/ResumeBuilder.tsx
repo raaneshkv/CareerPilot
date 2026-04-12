@@ -262,7 +262,7 @@ export default function ResumeBuilder() {
   });
   const [targetJob, setTargetJob] = useState("");
 
-  const handleTailorResume = () => {
+  const handleTailorResume = async () => {
     if (!targetJob.trim()) {
       toast.error("Please enter a target job description first.");
       return;
@@ -274,12 +274,66 @@ export default function ResumeBuilder() {
     setIsGenerating(true);
     setAtsResult(null);
 
-    setTimeout(() => {
+    // Build a single resume text string for the model
+    const resumeText = [
+      resumeData.name, resumeData.role,
+      resumeData.skills, resumeData.experience,
+      resumeData.education, resumeData.projects,
+    ].filter(Boolean).join(" ");
+
+    try {
+      // ── Call the trained SentenceTransformer model ─────────
+      const res = await fetch("http://localhost:8000/model/ats-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume: resumeText, job_description: targetJob }),
+      });
+
+      let semanticScore = 50;
+      let modelMissingSkills: string[] = [];
+      if (res.ok) {
+        const modelData = await res.json();
+        semanticScore     = Math.round(modelData.semantic_score);
+        modelMissingSkills = modelData.missing_skills || [];
+      }
+
+      // ── Still run local heuristic subscores ────────────────
+      const localResult = computeATSScore(resumeData, targetJob);
+
+      // Blend: semantic replaces keyword score at 40% weight;
+      // recalculate total with model score
+      const blendedTotal = Math.round(
+        semanticScore      * 0.40 +
+        localResult.skillsScore  * 0.25 +
+        localResult.contentScore * 0.20 +
+        localResult.formatScore  * 0.15
+      );
+
+      // Merge model missing skills into suggestions
+      const extraSuggestions = [...localResult.suggestions];
+      if (modelMissingSkills.length > 0) {
+        extraSuggestions.unshift(
+          `Model identified these missing skills: ${modelMissingSkills.slice(0, 6).join(", ")}`
+        );
+      }
+
+      setAtsResult({
+        ...localResult,
+        total: blendedTotal,
+        keywordScore: semanticScore,   // semantic replaces keyword
+        semanticScore,
+        suggestions: extraSuggestions.slice(0, 5),
+        modelPowered: true,
+      });
+      toast.success("ATS analysis complete — powered by trained AI model!");
+    } catch (err) {
+      // Fallback to local-only scoring if backend is down
       const result = computeATSScore(resumeData, targetJob);
-      setAtsResult(result);
+      setAtsResult({ ...result, modelPowered: false });
+      toast.warning("Backend offline — using local ATS engine.");
+    } finally {
       setIsGenerating(false);
-      toast.success("ATS analysis complete!");
-    }, 1500);
+    }
   };
 
   const handleExport = () => {
@@ -487,15 +541,26 @@ export default function ResumeBuilder() {
 
                     {/* Score Breakdown */}
                     <div className="mt-4 space-y-3 text-left">
+                      {atsResult.modelPowered && (
+                        <div className="flex items-center gap-2 text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-2.5 py-1.5 mb-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                          Powered by trained SentenceTransformer model
+                        </div>
+                      )}
                       {[
-                        { label: "Keyword Match", value: atsResult.keywordScore, detail: `${atsResult.matchedKeywordCount}/${atsResult.totalKeywordCount} keywords` },
+                        { label: atsResult.modelPowered ? "Semantic Match (AI Model)" : "Keyword Match", value: atsResult.keywordScore, detail: atsResult.modelPowered ? `${atsResult.semanticScore}% semantic similarity` : `${atsResult.matchedKeywordCount}/${atsResult.totalKeywordCount} keywords` },
                         { label: "Skills Coverage", value: atsResult.skillsScore },
                         { label: "Content Quality", value: atsResult.contentScore },
                         { label: "Completeness", value: atsResult.formatScore },
                       ].map((item, i) => (
                         <div key={i}>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-muted-foreground">{item.label}</span>
+                            <span className="text-muted-foreground flex items-center gap-1.5">
+                              {item.label}
+                              {i === 0 && atsResult.modelPowered && (
+                                <span className="text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded font-bold">MODEL</span>
+                              )}
+                            </span>
                             <span className={`font-bold ${scoreColor(item.value)}`}>{item.value}%</span>
                           </div>
                           <Progress value={item.value} className="h-1.5" />

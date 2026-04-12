@@ -16,9 +16,11 @@ import { API_URL } from "@/lib/api";
 import type { RoadmapNodeData } from "@/components/RoadmapNode";
 
 import * as pdfjsLib from "pdfjs-dist";
+// Use Vite's explicit URL import for the worker script
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import mammoth from "mammoth";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 const extractTextFromFile = async (file: File): Promise<string> => {
   try {
@@ -43,6 +45,7 @@ const extractTextFromFile = async (file: File): Promise<string> => {
     }
   } catch (error) {
     console.error("Error extracting text:", error);
+    throw new Error("Failed to extract text from the file. Please ensure it's a valid PDF or DOCX.");
   }
   return await file.text();
 };
@@ -234,7 +237,12 @@ const Roadmap = () => {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || "Failed to generate roadmap. Please try again.");
+        let errMsg = "Failed to generate roadmap. Please try again.";
+        if (errData.detail) {
+          if (typeof errData.detail === 'string') errMsg = errData.detail;
+          else if (Array.isArray(errData.detail) && errData.detail[0]?.msg) errMsg = errData.detail[0].msg;
+        }
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
@@ -311,7 +319,13 @@ const Roadmap = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate roadmap from local AI");
+        const errData = await response.json().catch(() => ({}));
+        let errMsg = "Failed to generate roadmap from local AI";
+        if (errData.detail) {
+          if (typeof errData.detail === 'string') errMsg = errData.detail;
+          else if (Array.isArray(errData.detail) && errData.detail[0]?.msg) errMsg = errData.detail[0].msg;
+        }
+        throw new Error(errMsg);
       }
 
       const data = await response.json();

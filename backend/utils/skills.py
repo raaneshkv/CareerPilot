@@ -84,19 +84,50 @@ def extract_keywords(text: str) -> Set[str]:
 
 def find_missing_skills(resume_text: str, job_text: str) -> List[str]:
     """
-    Identify skills mentioned in the job description but absent from the
-    resume.
+    Identify skills required for the job but absent from the resume.
+
+    For short job titles (e.g. "data scientist"), uses the role_skill_map
+    to look up actual required skills instead of doing raw keyword extraction
+    on a 2-word job title.
+
+    For long job descriptions, falls back to keyword extraction.
 
     Args:
-        resume_text: Raw text of the candidate's resume.
-        job_text:    Raw text of the job description.
+        resume_text: Raw text of the candidate's resume / skills.
+        job_text:    Raw text of the job description or job title.
 
     Returns:
         Sorted list of missing skill keywords.
     """
+    resume_lower = resume_text.lower()
+
+    # For short job titles, use role_skill_map for accurate skill gaps
+    if len(job_text.split()) <= 15:
+        try:
+            from data.role_skill_map import role_skill_map, resolve_role_key
+            role_key = resolve_role_key(job_text)
+            if role_key and role_key in role_skill_map:
+                required_skills = list(role_skill_map[role_key].keys())
+                missing = []
+                for skill in required_skills:
+                    skill_lower = skill.lower()
+                    # Check if skill appears in resume
+                    if skill_lower not in resume_lower:
+                        # Also check individual words for multi-word skills
+                        words = skill_lower.split()
+                        if not (len(words) > 1 and all(w in resume_lower for w in words)):
+                            missing.append(skill)
+                logger.debug(
+                    "Role-based gap: required=%d | missing=%d | role=%s",
+                    len(required_skills), len(missing), role_key,
+                )
+                return sorted(missing)
+        except Exception as e:
+            logger.debug("Role-based gap analysis failed, falling back: %s", e)
+
+    # Fallback: keyword extraction for long job descriptions
     resume_keywords = extract_keywords(resume_text)
     job_keywords = extract_keywords(job_text)
-
     missing = job_keywords - resume_keywords
 
     logger.debug(
