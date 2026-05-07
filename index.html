@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerPilot — Navigate Your Career with AI</title>
+  <meta name="description" content="CareerPilot uses Grok AI to analyze your resume, build personalized career roadmaps, suggest jobs, mentor you, and run mock interviews." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3L28 10V22L16 29L4 22V10L16 3Z" fill="url(#lg1)" />
+            <path d="M16 9L13 12.5V18.5L16 22L19 18.5V12.5L16 9Z" fill="white" opacity="0.92"/>
+            <defs>
+              <linearGradient id="lg1" x1="4" y1="3" x2="28" y2="29" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">CareerPilot</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="roadmap.html" class="nav-link">Roadmap</a>
+        <a href="interview.html" class="nav-link">Mock Interview</a>
+      </div>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">
+          <span class="t-icon sun">☀️</span>
+          <span class="t-icon moon">🌙</span>
+        </button>
+        <!-- Profile Dropdown (shown when logged in) -->
+        <div class="profile-menu" id="profileMenu" style="display:none; position:relative;">
+          <button class="profile-avatar-btn" id="profileAvatarBtn" aria-label="Profile menu" aria-expanded="false">
+            <span class="profile-initials" id="profileInitials">?</span>
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header">
+              <div class="profile-dropdown-avatar" id="profileDropdownAvatar">?</div>
+              <div class="profile-dropdown-info">
+                <span class="profile-dropdown-name" id="profileDropdownName">User</span>
+                <span class="profile-dropdown-email" id="profileDropdownEmail"></span>
+              </div>
+            </div>
+            <div class="profile-dropdown-divider"></div>
+            <button class="profile-dropdown-item profile-signout" id="homeSignOutBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Sign Out
+            </button>
+          </div>
+        </div>
+        <button id="homeSignInBtn" class="btn-primary" style="font-size:0.88rem">Sign In</button>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-nav" id="mobileNav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="roadmap.html" class="nav-link">Roadmap</a>
+      <a href="interview.html" class="nav-link">Mock Interview</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="grid-bg"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-pulse"></span>
+        <span>Powered by Grok AI</span>
+      </div>
+      <h1 class="hero-title">Navigate Your Career<br/><span class="grad-text">with AI Precision</span></h1>
+      <p class="hero-sub">Upload your resume and let CareerPilot craft a personalized career roadmap, match you with top jobs, mentor you 24/7, and prepare you with mock interviews.</p>
+      <div class="hero-cta">
+        <a href="roadmap.html" class="btn-hero" id="heroRoadmapBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 16l4.553 2.276A1 1 0 0021 24.382V8.618a1 1 0 00-.553-.894L15 5m0 18V5m0 0L9 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Career Roadmap
+        </a>
+        <a href="interview.html" class="btn-outline" id="heroInterviewBtn">
+          🎤 Mock Interview
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num">50K+</span><span class="stat-lbl">Careers Guided</span></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><span class="stat-num">94%</span><span class="stat-lbl">Success Rate</span></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><span class="stat-num">200+</span><span class="stat-lbl">Job Categories</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-mockup">
+        <div class="mockup-bar"><span></span><span></span><span></span><span class="mockup-title-txt">Career Roadmap</span></div>
+        <div class="mockup-body">
+          <div class="m-step done"><div class="m-dot done-dot"></div><div class="m-info"><span>Resume Analysis</span><div class="m-bar"><div style="width:100%"></div></div></div></div>
+          <div class="m-step done"><div class="m-dot done-dot"></div><div class="m-info"><span>Skill Gap Analysis</span><div class="m-bar"><div style="width:75%"></div></div></div></div>
+          <div class="m-step active"><div class="m-dot active-dot"></div><div class="m-info"><span>Learning Path</span><div class="m-bar"><div style="width:40%"></div></div></div></div>
+          <div class="m-step"><div class="m-dot pend-dot"></div><div class="m-info"><span>Interview Prep</span><div class="m-bar"><div style="width:0%"></div></div></div></div>
+        </div>
+      </div>
+      <div class="float-card fc1"><span class="fc-icon">🎯</span><div><strong>Job Match!</strong><small>Senior Dev · 96% fit</small></div></div>
+      <div class="float-card fc2"><span class="fc-icon">🤖</span><div><strong>AI Mentor</strong><small>Ready to assist</small></div></div>
+      <div class="float-card fc3"><span class="fc-icon">📈</span><div><strong>Roadmap Ready</strong><small>12-week plan</small></div></div>
+    </div>
+  </section>
+
+  <!-- Bento Grid -->
+  <section class="features" id="features">
+    <div class="section-head">
+      <h2>Everything You Need to <span class="grad-text">Succeed</span></h2>
+      <p>A complete AI-powered career toolkit — in one place</p>
+    </div>
+    <div class="bento-grid">
+
+      <!-- Card: Career Roadmap (large) -->
+      <div class="bento-card card-roadmap bento-lg" id="bcard-roadmap">
+        <div class="card-glow"></div>
+        <div class="card-inner">
+          <div class="card-badge-tag">Core Feature</div>
+          <div class="card-emoji">🗺️</div>
+          <h3>AI Career Roadmap</h3>
+          <p>Upload your resume and receive a hyper-personalized roadmap with skill gaps, learning resources, and timeline milestones.</p>
+          <div class="roadmap-steps">
+            <div class="rs rs-done"><div class="rs-dot"></div><div class="rs-line"></div><span>Skills Assessment</span></div>
+            <div class="rs rs-active"><div class="rs-dot"></div><div class="rs-line"></div><span>Learning Path</span></div>
+            <div class="rs rs-next"><div class="rs-dot"></div><div class="rs-line"></div><span>Job Applications</span></div>
+            <div class="rs rs-next"><div class="rs-dot"></div><span>Offer & Negotiate</span></div>
+          </div>
+          <a href="roadmap.html" class="card-cta">Build My Roadmap <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </div>
+
+      <!-- Card: Job Matches -->
+      <div class="bento-card card-jobs bento-md" id="bcard-jobs">
+        <div class="card-glow"></div>
+        <div class="card-inner">
+          <div class="card-emoji">💼</div>
+          <h3>Job Matches</h3>
+          <p>AI surfaces top opportunities perfectly matching your profile.</p>
+          <div class="job-list">
+            <div class="job-row"><div class="job-dot" style="background:#6366f1"></div><div class="job-info"><span>Software Engineer</span><small>Google · Remote</small></div><span class="job-pct">98%</span></div>
+            <div class="job-row"><div class="job-dot" style="background:#0ea5e9"></div><div class="job-info"><span>Product Manager</span><small>Stripe · NYC</small></div><span class="job-pct">91%</span></div>
+            <div class="job-row"><div class="job-dot" style="background:#10b981"></div><div class="job-info"><span>UX Designer</span><small>Figma · SF</small></div><span class="job-pct">87%</span></div>
+          </div>
+          <a href="roadmap.html" class="card-link">View All Matches →</a>
+        </div>
+      </div>
+
+      <!-- Card: AI Mentor -->
+      <div class="bento-card card-mentor bento-sm" id="bcard-mentor">
+        <div class="card-glow"></div>
+        <div class="card-inner">
+          <div class="card-emoji">🤖</div>
+          <h3>AI Mentor</h3>
+          <p>24/7 expert guidance powered by Grok. Ask anything.</p>
+          <div class="chat-preview">
+            <div class="cp-bubble user">How do I negotiate salary?</div>
+            <div class="cp-bubble ai">Research market rates, then anchor high with data-backed confidence...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Mock Interview -->
+      <div class="bento-card card-interview bento-md" id="bcard-interview">
+        <div class="card-glow"></div>
+        <div class="card-inner">
+          <div class="card-emoji">🎤</div>
+          <h3>Mock Interview</h3>
+          <p>Practice with AI interviews. Get real-time feedback, tips, and performance scores.</p>
+          <div class="interview-prev">
+            <div class="iq-box"><span class="iq-q">Q:</span><span>Tell me about a time you overcame a challenge...</span></div>
+            <div class="metric"><span>Confidence</span><div class="mbar"><div style="width:82%"></div></div><span>82%</span></div>
+            <div class="metric"><span>Clarity</span><div class="mbar"><div style="width:76%"></div></div><span>76%</span></div>
+          </div>
+          <a href="interview.html" class="card-cta">Start Practice <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </div>
+
+      <!-- Card: Stats -->
+      <div class="bento-card card-stats bento-sm" id="bcard-stats">
+        <div class="card-glow"></div>
+        <div class="card-inner">
+          <div class="card-emoji">📊</div>
+          <h3>Your Progress</h3>
+          <div class="stats-mini">
+            <div class="sm-stat"><span class="sm-val">12</span><span class="sm-lbl">Skills Gained</span></div>
+            <div class="sm-stat"><span class="sm-val">8</span><span class="sm-lbl">Interviews</span></div>
+            <div class="sm-stat"><span class="sm-val">3</span><span class="sm-lbl">Offers</span></div>
+            <div class="sm-stat"><span class="sm-val">92%</span><span class="sm-lbl">Profile Score</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Resume Analyzer (wide) -->
+      <div class="bento-card card-resume bento-wide" id="bcard-resume">
+        <div class="card-glow"></div>
+        <div class="card-inner">
+          <div class="card-emoji">📄</div>
+          <h3>Smart Resume Analyzer</h3>
+          <p>Paste your resume for instant AI analysis — ATS score, keyword gaps, and improvement tips.</p>
+          <div class="resume-prev">
+            <div class="ats-ring">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="8"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#sg)" stroke-width="8" stroke-dasharray="188 251" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                <defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
+              </svg>
+              <div class="ats-val"><span>75</span><small>ATS Score</small></div>
+            </div>
+            <div class="tag-groups">
+              <div class="tag-grp"><span class="tg-lbl">Missing</span><div><span class="tag miss">React</span><span class="tag miss">TypeScript</span><span class="tag miss">Docker</span></div></div>
+              <div class="tag-grp"><span class="tg-lbl">Strengths</span><div><span class="tag good">Python</span><span class="tag good">ML</span><span class="tag good">Leadership</span></div></div>
+            </div>
+          </div>
+          <a href="roadmap.html" class="card-cta">Analyze My Resume →</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-it-works">
+    <div class="section-head">
+      <h2>How <span class="grad-text">CareerPilot</span> Works</h2>
+      <p>Three simple steps to transform your career trajectory</p>
+    </div>
+    <div class="steps">
+      <div class="step-card"><div class="step-num">01</div><div class="step-emoji">📤</div><h3>Upload Your Resume</h3><p>Share your resume. Our AI deeply analyzes your skills, experience, and aspirations in seconds.</p><div class="step-connector"></div></div>
+      <div class="step-card"><div class="step-num">02</div><div class="step-emoji">🧠</div><h3>AI Builds Your Plan</h3><p>Grok AI generates a personalized roadmap, identifies skill gaps, and matches you with ideal jobs.</p><div class="step-connector"></div></div>
+      <div class="step-card"><div class="step-num">03</div><div class="step-emoji">🚀</div><h3>Land Your Dream Job</h3><p>Follow your roadmap, practice mock interviews, get AI mentorship, and land that offer.</p></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-glow"></div>
+    <div class="cta-inner">
+      <h2>Ready to <span class="grad-text">Take Off?</span></h2>
+      <p>Join thousands of professionals who've transformed their careers with CareerPilot.</p>
+      <a href="roadmap.html" class="btn-hero" style="margin-top:1.5rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Launch My Career
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="nav-logo">
+          <div class="logo-icon sm">
+            <svg viewBox="0 0 32 32" fill="none"><path d="M16 3L28 10V22L16 29L4 22V10L16 3Z" fill="url(#flg)"/><path d="M16 9L13 12.5V18.5L16 22L19 18.5V12.5L16 9Z" fill="white" opacity="0.92"/><defs><linearGradient id="flg" x1="4" y1="3" x2="28" y2="29" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg>
+          </div>
+          <span class="logo-text">CareerPilot</span>
+        </div>
+        <p>AI-powered career navigation for the modern professional.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="fcol"><h4>Product</h4><a href="roadmap.html">Career Roadmap</a><a href="interview.html">Mock Interview</a></div>
+        <div class="fcol"><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© 2026 CareerPilot · Powered by Grok AI</p></div>
+  </footer>
+
+  <!-- Floating Chatbot FAB -->
+  <div class="chatbot-fab" id="chatbotFab" aria-label="Open AI Mentor">
+    <div class="fab-ring"></div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.55 1.38 5L2 22l5-1.38C8.45 21.5 10.16 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" fill="white"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <span class="fab-tip">AI Mentor</span>
+  </div>
+
+  <!-- Chatbot Panel -->
+  <div class="chatbot-panel" id="chatbotPanel">
+    <div class="cp-header">
+      <div class="cp-avatar"><div class="cp-av-glow"></div>🤖</div>
+      <div class="cp-info"><h4>CareerPilot AI</h4><span><span class="online-dot"></span>Online · Grok AI</span></div>
+      <button class="cp-close" id="chatbotClose" aria-label="Close">✕</button>
+    </div>
+    <div class="cp-messages" id="chatMessages">
+      <div class="cm ai"><div class="cm-av">🤖</div><div class="cm-bubble"><p>👋 Hi! I'm your AI Career Mentor powered by Grok. Ask me anything about career paths, resume tips, interview strategies, or job hunting!</p></div></div>
+    </div>
+    <div class="cp-input-area">
+      <div class="cp-chips">
+        <button class="chip" onclick="sendChip(this)">📄 Review my resume</button>
+        <button class="chip" onclick="sendChip(this)">💼 Suggest jobs for me</button>
+        <button class="chip" onclick="sendChip(this)">🎯 How to negotiate salary?</button>
+      </div>
+      <div class="cp-row">
+        <input type="text" id="chatInput" placeholder="Ask your career question..." class="chat-inp" />
+        <button id="chatSend" class="chat-send" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Modal -->
+  <div class="api-modal" id="apiModal">
+    <div class="api-modal-box">
+      <div class="api-modal-icon">🔑</div>
+      <h3>Enter Your Grok API Key</h3>
+      <p>Your key is stored locally and never sent to our servers.</p>
+      <input type="password" id="apiKeyInput" placeholder="xai-..." class="api-key-field" />
+      <div class="api-modal-actions">
+        <button class="btn-primary" id="saveApiKey">Save & Continue</button>
+        <button class="btn-ghost" id="cancelApiKey">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

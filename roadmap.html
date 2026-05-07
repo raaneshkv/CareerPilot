@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Career Roadmap — CareerPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3L28 10V22L16 29L4 22V10L16 3Z" fill="url(#lg1)" />
+            <path d="M16 9L13 12.5V18.5L16 22L19 18.5V12.5L16 9Z" fill="white" opacity="0.92"/>
+            <defs>
+              <linearGradient id="lg1" x1="4" y1="3" x2="28" y2="29" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">CareerPilot</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="roadmap.html" class="nav-link active">Roadmap</a>
+        <a href="interview.html" class="nav-link">Mock Interview</a>
+      </div>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <span class="t-icon sun">☀️</span>
+          <span class="t-icon moon">🌙</span>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-nav" id="mobileNav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="roadmap.html" class="nav-link active">Roadmap</a>
+      <a href="interview.html" class="nav-link">Mock Interview</a>
+    </div>
+  </nav>
+
+  <main class="page-container">
+    <header class="page-header">
+       <h1>AI Career <span class="grad-text">Roadmap</span></h1>
+       <p>Upload your resume to get a personalized learning path and job matches.</p>
+    </header>
+
+    <section class="upload-section" id="uploadSection">
+
+      <!-- PDF / File Upload -->
+      <div class="pdf-drop-zone" id="pdfDropZone">
+        <input type="file" id="pdfFileInput" accept=".pdf" hidden />
+        <div class="pdf-drop-inner" id="pdfDropInner">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p class="pdf-drop-title">Drag &amp; drop your PDF resume</p>
+          <p class="pdf-drop-sub">or <button type="button" class="pdf-browse-btn" id="pdfBrowseBtn">browse file</button></p>
+          <span class="pdf-file-name" id="pdfFileName"></span>
+        </div>
+      </div>
+
+      <div class="upload-divider"><span>or paste resume text</span></div>
+
+       <textarea id="resumeInput" placeholder="Paste the text of your resume here...&#10;&#10;e.g.,&#10;John Doe&#10;Software Engineer&#10;Experience: 3 years building React apps..."></textarea>
+       <button class="btn-hero" id="generateBtn">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         Generate Roadmap
+       </button>
+    </section>
+    
+    <section class="results-section hidden" id="resultsSection">
+      
+      <!-- 1. Header -->
+      <div class="dash-card header-card">
+        <div class="dash-header-flex">
+          <div class="dash-title-area">
+            <div class="dash-badge"><span class="t-icon">✨</span> AI Generated</div>
+            <h2>Your AI <span class="grad-text">Roadmap</span></h2>
+            <p id="dashSummary" class="dash-summary">Analyzing your profile...</p>
+          </div>
+          <div class="dash-actions">
+            <button class="btn-outline btn-sm" id="exportBtn">⬇️ Export PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Recommended Roles -->
+      <div class="dash-card">
+        <h3 class="dash-section-title"><span class="t-icon">📈</span> Recommended Roles</h3>
+        <div class="roles-grid" id="rolesGrid"></div>
+      </div>
+
+      <!-- 3. Proof of Work Projects -->
+      <div class="dash-card">
+        <h3 class="dash-section-title"><span class="t-icon">🎯</span> Proof of Work — Recommended Projects</h3>
+        <div class="projects-grid" id="projectsGrid"></div>
+      </div>
+
+      <!-- 4. Skill Gap Analysis -->
+      <div class="dash-card">
+        <h3 class="dash-section-title"><span class="t-icon">🧠</span> Skill Gap Analysis</h3>
+        <div class="skill-gap-grid">
+          <div>
+            <p class="dash-sub-label">Skills Detected</p>
+            <div class="skills-tags" id="skillsTags"></div>
+          </div>
+          <div>
+            <div class="skill-bar-legend">
+              <span><span class="sbl-dot sbl-current"></span>Current Level</span>
+              <span><span class="sbl-dot sbl-required"></span>Required Level</span>
+            </div>
+            <div class="skill-bars-grid" id="skillBarsGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Progress Tracker -->
+      <div class="dash-card progress-card">
+        <div class="progress-ring-container">
+          <svg class="progress-ring" width="144" height="144">
+            <circle class="progress-ring-bg" cx="72" cy="72" r="54" stroke-width="8" fill="none" />
+            <circle class="progress-ring-fill" id="progressRingFill" cx="72" cy="72" r="54" stroke-width="8" fill="none" stroke-linecap="round" />
+          </svg>
+          <div class="progress-ring-text">
+            <span class="grad-text" id="progressPct">0%</span>
+            <small>Complete</small>
+          </div>
+        </div>
+        <div class="progress-info">
+          <h3 class="dash-section-title"><span class="t-icon">🏆</span> Overall Progress</h3>
+          <p class="progress-count" id="progressCount">0 of 5 steps done</p>
+          <p class="progress-sub" id="progressSub">5 steps remaining to reach your target role.</p>
+        </div>
+      </div>
+
+      <!-- 6. Roadmap Timeline -->
+      <div class="dash-card">
+        <h3 class="dash-section-title"><span class="t-icon">⚡</span> Roadmap Timeline</h3>
+        <div class="roadmap-nodes" id="roadmapNodes"></div>
+      </div>
+
+      <button class="btn-outline" id="resetBtn" style="margin-top: 1rem;">Start Over</button>
+    </section>
+  </main>
+
+  <!-- API Key Modal -->
+  <div class="api-modal" id="apiModal">
+    <div class="api-modal-box">
+      <div class="api-modal-icon">🔑</div>
+      <h3>Enter Your Grok API Key</h3>
+      <p>Your key is stored locally and never sent to our servers.</p>
+      <input type="password" id="apiKeyInput" placeholder="xai-..." class="api-key-field" />
+      <div class="api-modal-actions">
+        <button class="btn-primary" id="saveApiKey">Save & Continue</button>
+        <button class="btn-ghost" id="cancelApiKey">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chatbot FAB -->
+  <div class="chatbot-fab" id="chatbotFab" aria-label="Open AI Mentor">
+    <div class="fab-ring"></div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.55 1.38 5L2 22l5-1.38C8.45 21.5 10.16 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" fill="white"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </div>
+
+  <!-- Chatbot Panel -->
+  <div class="chatbot-panel" id="chatbotPanel">
+    <div class="cp-header">
+      <div class="cp-avatar">🤖</div>
+      <div class="cp-info"><h4>CareerPilot AI</h4><span><span class="online-dot"></span>Online</span></div>
+      <button class="cp-close" id="chatbotClose">✕</button>
+    </div>
+    <div class="cp-messages" id="chatMessages">
+      <div class="cm ai"><div class="cm-av">🤖</div><div class="cm-bubble"><p>Hi! Need help with your roadmap?</p></div></div>
+    </div>
+    <div class="cp-input-area">
+      <div class="cp-row">
+        <input type="text" id="chatInput" placeholder="Ask a question..." class="chat-inp" />
+        <button id="chatSend" class="chat-send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="roadmap.js"></script>
+</body>
+</html>

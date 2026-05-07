@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mock Interview — CareerPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3L28 10V22L16 29L4 22V10L16 3Z" fill="url(#lg1)" />
+            <path d="M16 9L13 12.5V18.5L16 22L19 18.5V12.5L16 9Z" fill="white" opacity="0.92"/>
+            <defs>
+              <linearGradient id="lg1" x1="4" y1="3" x2="28" y2="29" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">CareerPilot</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="roadmap.html" class="nav-link">Roadmap</a>
+        <a href="interview.html" class="nav-link active">Mock Interview</a>
+      </div>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <span class="t-icon sun">☀️</span>
+          <span class="t-icon moon">🌙</span>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-nav" id="mobileNav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="roadmap.html" class="nav-link">Roadmap</a>
+      <a href="interview.html" class="nav-link active">Mock Interview</a>
+    </div>
+  </nav>
+
+  <main class="page-container">
+    <header class="page-header">
+       <h1>Mock <span class="grad-text">Interview</span></h1>
+       <p>Practice with AI. Get real-time feedback and performance scores.</p>
+    </header>
+
+    <section class="setup-section" id="setupSection">
+       <input type="text" id="jobRole" placeholder="Enter Target Job Role (e.g., Software Engineer)" class="api-key-field" />
+       <button class="btn-hero" id="startInterviewBtn">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         Start Interview
+       </button>
+    </section>
+    
+    <section class="interview-section hidden" id="interviewSection">
+       <div class="question-box" id="questionBox">Generating question...</div>
+       <textarea id="answerInput" placeholder="Type your answer here..."></textarea>
+       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+         <button class="btn-primary" id="submitAnswerBtn" style="flex:1">Submit Answer</button>
+         <button class="btn-ghost" id="skipQuestionBtn" style="flex:0 0 auto;padding:0.75rem 1.25rem">⏭ Skip</button>
+       </div>
+       
+       <div id="feedbackBox" class="feedback-box hidden">
+           <h4 id="feedbackTitle">Feedback</h4>
+           <p id="feedbackText"></p>
+           <button class="btn-outline" id="nextQuestionBtn" style="margin-top:1rem;">Next Question</button>
+       </div>
+    </section>
+  </main>
+
+  <!-- API Key Modal -->
+  <div class="api-modal" id="apiModal">
+    <div class="api-modal-box">
+      <div class="api-modal-icon">🔑</div>
+      <h3>Enter Your Grok API Key</h3>
+      <p>Your key is stored locally and never sent to our servers.</p>
+      <input type="password" id="apiKeyInput" placeholder="xai-..." class="api-key-field" />
+      <div class="api-modal-actions">
+        <button class="btn-primary" id="saveApiKey">Save & Continue</button>
+        <button class="btn-ghost" id="cancelApiKey">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chatbot FAB -->
+  <div class="chatbot-fab" id="chatbotFab" aria-label="Open AI Mentor">
+    <div class="fab-ring"></div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.55 1.38 5L2 22l5-1.38C8.45 21.5 10.16 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" fill="white"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </div>
+
+  <!-- Chatbot Panel -->
+  <div class="chatbot-panel" id="chatbotPanel">
+    <div class="cp-header">
+      <div class="cp-avatar">🤖</div>
+      <div class="cp-info"><h4>CareerPilot AI</h4><span><span class="online-dot"></span>Online</span></div>
+      <button class="cp-close" id="chatbotClose">✕</button>
+    </div>
+    <div class="cp-messages" id="chatMessages">
+      <div class="cm ai"><div class="cm-av">🤖</div><div class="cm-bubble"><p>Hi! Need help with your interview?</p></div></div>
+    </div>
+    <div class="cp-input-area">
+      <div class="cp-row">
+        <input type="text" id="chatInput" placeholder="Ask a question..." class="chat-inp" />
+        <button id="chatSend" class="chat-send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="interview.js"></script>
+</body>
+</html>
